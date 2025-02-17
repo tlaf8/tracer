@@ -23,7 +23,7 @@ body {
     bottom: 0;
     margin: auto;
     border: 3px solid;
-    border-color: transparent #FF3D00 #FF3D00;
+    border-color: transparent #0000ff #0000ff transparent;
     width: 12px;
     height: 12px;
     border-radius: 50%;
