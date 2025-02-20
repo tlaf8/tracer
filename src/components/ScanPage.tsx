@@ -1,7 +1,8 @@
-import React, {useState} from "react";
-import {Button, Col, Container, Row} from "react-bootstrap";
+import React, {useState, useEffect} from "react";
+import {Button, Col, Container, Modal, Row} from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
+import 'bootstrap-icons/font/bootstrap-icons.css';
 import Scanner from './Scanner';
 
 const ScanPage: React.FC = () => {
@@ -9,6 +10,7 @@ const ScanPage: React.FC = () => {
     const rentalRegex = /\b\w{1,6}\d{0,4}-\d+\b/;
     const [deviceId, setDeviceId] = useState<string | null>(null);
     const [studentId, setStudentId] = useState<string | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
     const [scanning, setScanning] = useState<boolean>(false);
 
     const handleScan = (data: string) => {
@@ -25,12 +27,23 @@ const ScanPage: React.FC = () => {
         }
     }
 
-    const handleSubmit = () => {
-        console.log("Send to backend");
+    const reset = () => {
         setDeviceId(null);
         setStudentId(null);
+        setIsModalOpen(false);
+    }
+
+    const handleSubmit = () => {
+        console.log("Send to backend");
+        reset();
         alert('sent to backend');
     }
+
+    useEffect(() => {
+        if (deviceId && studentId) {
+            setIsModalOpen(true);
+        }
+    }, [deviceId, studentId]);
 
     return (
         <>
@@ -42,6 +55,8 @@ const ScanPage: React.FC = () => {
                 <Row className="d-flex align-items-stretch justify-content-center w-75 overflow-hidden">
                     <Col md={10} className="d-flex text-center p-3 rounded-pill bg-dark">
                         <div className="flex-fill p-3 text-light fw-bolder border-end border-secondary">
+                            {/* Consider changing the below to set device and student to ...*/}
+
                             <p>Device ID</p>
                             <p>
                                 {scanning ? (
@@ -55,7 +70,7 @@ const ScanPage: React.FC = () => {
                         <div className="flex-fill p-3 text-light fw-bolder">
                             <p>Student ID</p>
                             {scanning ? (
-                                studentId ? studentId : <span className="loader"></span>
+                                studentId ? studentId.substring(0, 8) + '...' : <span className="loader"></span>
                             ) : (
                                 '...'
                             )}
@@ -63,6 +78,19 @@ const ScanPage: React.FC = () => {
                     </Col>
                 </Row>
             </Container>
+            <Modal show={isModalOpen} centered>
+                <Modal.Header>
+                    <Modal.Title>New Rental</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <p>Device ID: {deviceId}</p>
+                    <p>Student ID: {studentId?.substring(0, 32) + '...'}</p>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="danger" onClick={reset}>Cancel</Button>
+                    <Button variant="primary" onClick={handleSubmit}>Confirm</Button>
+                </Modal.Footer>
+            </Modal>
         </>
     );
 };

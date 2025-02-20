@@ -1,32 +1,41 @@
-import React from 'react';
-import {BrowserRouter as Router, Routes, Route, Link} from 'react-router-dom';
+import React, {useState} from 'react';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import "bootstrap/dist/css/bootstrap.min.css";
 import ScanPage from './components/ScanPage';
 
 const App: React.FC = () => {
+    const [homePageActive, setHomePageActive] = useState<boolean>(true);
+
+    const switchPage = () => {
+        setHomePageActive(() => !homePageActive);
+    }
+
     return (
         <Router>
-            <div className="collapse" id="navbarToggleExternalContent">
-                <div className="bg-dark p-4 z-3">
-                    <Link className='btn btn-outline-secondary rounded-pill me-3' to="/">Scan a device</Link>
-                    <Link className='btn btn-outline-secondary rounded-pill' to="/link">Link a device</Link>
-                </div>
-            </div>
-            <nav className="navbar navbar-dark bg-dark z-3">
+            <nav className="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
                 <div className="container-fluid">
-                    <button className="navbar-toggler" type="button" data-bs-toggle="collapse"
-                            data-bs-target="#navbarToggleExternalContent" aria-controls="navbarToggleExternalContent"
-                            aria-expanded="false" aria-label="Toggle navigation">
-                        <span className="navbar-toggler-icon"></span>
-                    </button>
+                    <Link className="navbar-brand font-monospace" to="/">tracer</Link>
+                    <div className="collapse navbar-collapse" id="navbarNav">
+                        <ul className="navbar-nav ms-auto">
+                            <li className="nav-item">
+                                {homePageActive ? (
+                                    <Link className="nav-link" to="/link" onClick={switchPage}>Link this device</Link>
+                                ) : (
+                                    <Link className="nav-link" to="/" onClick={switchPage}>Back</Link>
+                                )}
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </nav>
+
             <Routes>
-                <Route path='/' element={<ScanPage />}>Home</Route>
+                <Route path="/" element={<ScanPage />} />
+                <Route path="/link" element={<p className="text-light m-3">Coming soon</p>} />
             </Routes>
         </Router>
-    )
+    );
 }
 
 export default App;

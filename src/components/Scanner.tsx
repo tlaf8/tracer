@@ -20,24 +20,32 @@ const Scanner: React.FC<ScannerProps> = ({ onScan, onError, setStatus }) => {
     }, []);
 
     const startScanner = () => {
-        if (videoRef.current) {
-            qrScannerRef.current = new QrScanner(
-                videoRef.current,
-                result => onScan(result.data),
-                {
-                    onDecodeError: error => onError(error),
-                    highlightCodeOutline: true,
-                    highlightScanRegion: true,
-                }
-            );
-            qrScannerRef.current.start().then(() => {
-                setIsScanning(true);
-                setStatus(true);
-            }).catch(err => {
-                console.error(err);
-                onError(err);
+        if (!videoRef.current) return;
+
+        qrScannerRef.current?.stop();
+        qrScannerRef.current = new QrScanner(
+            videoRef.current,
+            result => onScan(result.data),
+            {
+                onDecodeError: error => onError(error),
+                highlightCodeOutline: true,
+                highlightScanRegion: true,
+            }
+        );
+
+        setTimeout(() => {
+            requestAnimationFrame(() => {
+                qrScannerRef.current?.start()
+                    .then(() => {
+                        setIsScanning(true);
+                        setStatus(true);
+                    })
+                    .catch(error => {
+                        console.error(error);
+                        onError(error);
+                    })
             });
-        }
+        }, 200);
     };
 
     const stopScanner = () => {
