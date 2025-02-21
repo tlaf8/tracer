@@ -78,6 +78,7 @@ const ScanPage: React.FC = () => {
                     </Col>
                 </Row>
             </Container>
+
             <Modal show={isModalOpen} centered>
                 <Modal.Header>
                     <Modal.Title>New Rental</Modal.Title>

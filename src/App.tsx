@@ -1,28 +1,25 @@
-import React, {useState} from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import React from 'react';
+import {Routes, Route, Link, useLocation} from 'react-router-dom';
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import "bootstrap/dist/css/bootstrap.min.css";
 import ScanPage from './components/ScanPage';
+import LinkPage from './components/LinkPage';
 
 const App: React.FC = () => {
-    const [homePageActive, setHomePageActive] = useState<boolean>(true);
-
-    const switchPage = () => {
-        setHomePageActive(() => !homePageActive);
-    }
+    const location = useLocation();
 
     return (
-        <Router>
+        <>
             <nav className="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
                 <div className="container-fluid">
                     <Link className="navbar-brand font-monospace" to="/">tracer</Link>
                     <div className="collapse navbar-collapse" id="navbarNav">
                         <ul className="navbar-nav ms-auto">
                             <li className="nav-item">
-                                {homePageActive ? (
-                                    <Link className="nav-link" to="/link" onClick={switchPage}>Link this device</Link>
+                                {location.pathname === '/link' ? (
+                                    <Link className="nav-link" to="/" viewTransition>Back</Link>
                                 ) : (
-                                    <Link className="nav-link" to="/" onClick={switchPage}>Back</Link>
+                                    <Link className="nav-link" to="/link" viewTransition>Link this device</Link>
                                 )}
                             </li>
                         </ul>
@@ -32,9 +29,9 @@ const App: React.FC = () => {
 
             <Routes>
                 <Route path="/" element={<ScanPage />} />
-                <Route path="/link" element={<p className="text-light m-3">Coming soon</p>} />
+                <Route path="/link" element={<LinkPage />} />
             </Routes>
-        </Router>
+        </>
     );
 }
 
