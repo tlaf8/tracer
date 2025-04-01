@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import QrScanner from "qr-scanner";
+import QrScanner from 'qr-scanner';
 
 interface ScannerProps {
     onScan: (data: string) => void;
@@ -29,7 +29,7 @@ const Scanner: React.FC<ScannerProps> = ({ onScan, onError, setStatus }) => {
             {
                 onDecodeError: error => onError(error),
                 highlightCodeOutline: true,
-                highlightScanRegion: true,
+                highlightScanRegion: false,
             }
         );
 
@@ -76,7 +76,7 @@ const Scanner: React.FC<ScannerProps> = ({ onScan, onError, setStatus }) => {
                     transition={{duration: 1, ease: 'circInOut'}}
                 >Stop Camera</motion.button>
             )}
-            <video ref={videoRef} className="w-100 h-100 rounded" />
+            <video ref={videoRef} className='w-100 h-100 rounded' />
         </div>
     );
 }

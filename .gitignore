@@ -16,9 +16,16 @@ dist-ssr
 .vscode/*
 !.vscode/extensions.json
 .idea
+**/.venv
 .DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# Database
+**/*.db
+
+# Cache
+**/__pycache__
