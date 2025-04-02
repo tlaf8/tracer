@@ -30,14 +30,14 @@ const Dashboard: React.FC = () => {
         }
 
         try {
-            const logsResponse = await axios.get('http://localhost:9999/logs', {
+            const logsResponse = await axios.get(`https://${import.meta.env.VITE_HOST}/logs`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
             });
             setLogs(logsResponse.data.logs);
 
-            const statusResponse = await axios.get('http://localhost:9999/status', {
+            const statusResponse = await axios.get(`https://${import.meta.env.VITE_HOST}/status`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -76,7 +76,7 @@ const Dashboard: React.FC = () => {
         }
 
         try {
-            const response = await axios.post('http://localhost:9999/devices/add', {
+            const response = await axios.post(`https://${import.meta.env.VITE_HOST}/devices/add`, {
                 body: {
                     device: deviceNames,
                 }

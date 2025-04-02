@@ -14,7 +14,7 @@ app.config['JWT_SECRET_KEY'] = 'tracer'
 jwt = JWTManager(app)
 
 CORS(app, resources={r'/*': {
-    'origins': ['http://localhost:5173'],
+    'origins': ['https://tracer.vercel.app'],
     'methods': ['GET', 'POST', 'OPTIONS'],
     'allow_headers': ['Content-Type', 'Authorization']
 }})
