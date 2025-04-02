@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import {Container, Row} from 'react-bootstrap';
 import {useNavigate} from 'react-router-dom';
 import axios, {isAxiosError} from 'axios';
