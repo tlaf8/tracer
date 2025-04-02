@@ -42,7 +42,7 @@ const LinkPage: React.FC = () => {
     }
 
     useEffect(() => {
-        console.log(import.meta.env.VITE_HOST);
+        console.log(import.meta.env.PING);
     })
 
     return (
