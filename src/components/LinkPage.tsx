@@ -9,12 +9,9 @@ const LinkPage: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        console.log(import.meta.env.VITE_PING);
-    })
-
     const handleConnect = async () => {
         try {
+            console.log('sending to',`https://${import.meta.env.VITE_HOST}/link`)
             const response = await axios.post(`https://${import.meta.env.VITE_HOST}/link`, {
                 method: 'POST',
                 headers: {
