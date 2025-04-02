@@ -41,10 +41,6 @@ const LinkPage: React.FC = () => {
         }
     }
 
-    useEffect(() => {
-        console.log(import.meta.env.PING);
-    })
-
     return (
         <>
             <Container className='d-flex justify-content-center align-items-center flex-column text-light'>
