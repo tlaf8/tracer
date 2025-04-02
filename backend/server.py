@@ -50,7 +50,7 @@ def ensure_table(db_name):
     cursor.execute(f'''
         CREATE TABLE IF NOT EXISTS status (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            device TEXT NOT NULL,
+            device TEXT UNIQUE NOT NULL,
             status TEXT NOT NULL
         )
     ''')
@@ -85,6 +85,28 @@ def write_entry(db_name, device, student, date, time):
     conn.commit()
 
     conn.close()
+
+
+def add_device(db_name, devices):
+    ensure_table(db_name)
+    conn = sqlite3.connect(f'db/{db_name}.db')
+    cursor = conn.cursor()
+
+    try:
+        for device in devices:
+            cursor.execute('''
+                INSERT INTO status (device, status)
+                VALUES (?, ?)
+            ''', (device, 'IN',))
+            conn.commit()
+
+    except sqlite3.IntegrityError as e:
+        conn.close()
+        raise
+
+    except (Exception,) as e:
+        conn.close()
+        raise
 
 
 @app.route('/link', methods=['POST'])
@@ -132,6 +154,37 @@ def write_log():
 
         write_entry(db_name, body['device'], body['student'], body['date'], body['time'])
         return jsonify({'message': 'Log entry created successfully'}), 201
+
+    except Exception as e:
+        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+
+
+@app.route('/devices/add', methods=['POST'])
+@jwt_required()
+def add():
+    try:
+        if not request.is_json:
+            return jsonify({'error': 'Expecting json'}), 400
+
+        data = request.get_json()
+        body = data.get('body')
+        if body is None:
+            return jsonify({'error': 'No body'}), 400
+
+        db_name = get_jwt_identity()
+        if 'device' not in body:
+            return jsonify({'error': 'Missing device parameter'}), 400
+
+        try:
+            add_device(db_name, body['device'].split('\n'))
+        except sqlite3.IntegrityError as e:
+            print(str(e))
+            if 'UNIQUE constraint failed' in str(e):
+                return jsonify({'error': f'Duplicate key'}), 400
+            else:
+                raise
+
+        return jsonify({'message': 'Device created successfully'}), 201
 
     except Exception as e:
         return jsonify({'error': f'Unexpected error: {str(e)}'}), 500

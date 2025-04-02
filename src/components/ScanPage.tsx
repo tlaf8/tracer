@@ -15,6 +15,11 @@ const ScanPage: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
     const [scanning, setScanning] = useState<boolean>(false);
 
+    // const mock = () => {
+    //     setDeviceId('123');
+    //     setStudentName('test');
+    // }
+
     const handleScan = (data: string) => {
         if (b64Regex.test(data)) {
             setStudentName(Buffer.from(data, 'base64').toString());
@@ -81,8 +86,8 @@ const ScanPage: React.FC = () => {
 
                 <Row className='d-flex align-items-stretch justify-content-center w-75 overflow-hidden'>
                     <Col md={10} className='d-flex text-center p-3 rounded-pill bg-dark'>
-                        <div className='flex-fill p-3 text-light fw-bolder border-end border-secondary'>
-                            <p>Device ID</p>
+                        <div className='flex-fill p-2 text-light fw-bolder border-end border-secondary'>
+                            <p>Device</p>
                             <p>
                                 {scanning ? (
                                     deviceId ? deviceId : <span className='loader'></span>
@@ -91,8 +96,8 @@ const ScanPage: React.FC = () => {
                                 )}
                             </p>
                         </div>
-                        <div className='flex-fill p-3 text-light fw-bolder'>
-                            <p>Student Name</p>
+                        <div className='flex-fill p-2 text-light fw-bolder'>
+                            <p>Student</p>
                             {scanning ? (
                                 studentName ? studentName : <span className='loader'></span>
                             ) : (
@@ -102,6 +107,12 @@ const ScanPage: React.FC = () => {
                     </Col>
                 </Row>
             </Container>
+
+            {/*<div className='w-100 d-flex align-items-stretch justify-content-center overflow-hidden'>*/}
+            {/*    <Button variant='outline-primary' onClick={mock}>*/}
+            {/*        Mock*/}
+            {/*    </Button>*/}
+            {/*</div>*/}
 
             <Modal show={isModalOpen} centered data-bs-theme='dark' className='text-light'>
                 <Modal.Header>
