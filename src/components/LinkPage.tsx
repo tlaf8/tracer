@@ -9,6 +9,10 @@ const LinkPage: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
 
+    useEffect(() => {
+        console.log(import.meta.env.VITE_PING);
+    })
+
     const handleConnect = async () => {
         try {
             const response = await axios.post(`https://${import.meta.env.VITE_HOST}/link`, {
@@ -21,6 +25,7 @@ const LinkPage: React.FC = () => {
 
             if (response.status !== 200) {
                 setError(response.data.message);
+                console.log(response);
             }
 
             localStorage.setItem('token', response.data.token);
