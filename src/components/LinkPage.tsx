@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {Container, Row} from 'react-bootstrap';
 import {useNavigate} from 'react-router-dom';
 import axios, {isAxiosError} from 'axios';
@@ -40,6 +40,10 @@ const LinkPage: React.FC = () => {
             }
         }
     }
+
+    useEffect(() => {
+        console.log(import.meta.env.VITE_HOST);
+    })
 
     return (
         <>
