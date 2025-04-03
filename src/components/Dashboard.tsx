@@ -15,15 +15,23 @@ const Dashboard: React.FC = () => {
     const [rentalNames, setRentalName] = useState<string>('');
     const [hoveringBulk, setHoveringBulk] = useState<boolean>(false);
     const [inputType, setInputType] = useState<string>('single');
+    const [fetchingRentals, setFetchingRentals] = useState<boolean>(false);
+    const [fetchingLogs, setFetchingLogs] = useState<boolean>(false);
     const [error, setError] = useState<string>('');
 
     const reset = () => {
         setRentalName('');
         setError('');
+        setFetchingRentals(false);
+        setFetchingLogs(false);
         setRentalModalOpen(false);
     };
 
     const fetchData = async () => {
+        setFetchingRentals(true);
+        setFetchingLogs(true);
+        setError('');
+
         const token = localStorage.getItem('token');
         if (!token) {
             setError('No authentication token found. Please link this rental.');
@@ -37,6 +45,7 @@ const Dashboard: React.FC = () => {
                 }
             });
             setLogs(logsResponse.data.logs);
+            setFetchingLogs(false);
 
             const statusResponse = await axios.get(`https://sftracer.duckdns.org/api/status`, {
                 headers: {
@@ -44,12 +53,22 @@ const Dashboard: React.FC = () => {
                 }
             });
             setStatus(statusResponse.data.status);
+            setFetchingRentals(false);
+
         } catch (err) {
+            setFetchingRentals(false);
+            setFetchingLogs(false);
             if (isAxiosError(err)) {
-                setError(err.response?.data);
+                if (err.status === 401) {
+                    localStorage.removeItem('token');
+                    setError('Invalid token, please link this device again');
+                } else {
+                    setError(err.message);
+                }
+            } else {
+                setError('Something went wrong, check console for details.');
+                console.error(err);
             }
-            setError('Something went wrong, check console for details.');
-            console.error(err);
         }
     };
 
@@ -143,7 +162,7 @@ const Dashboard: React.FC = () => {
                 <Row className='mb-3'>
                     <Col>
                         <h4 className='text-white'>Logs
-                            <span className='ms-3 bi-arrow-clockwise float-end' style={{
+                            <span className='bi-arrow-clockwise float-end' style={{
                                 color: hoveringRefresh ? 'white' : '#4D5154',
                                 cursor: 'pointer'
                             }}
@@ -151,6 +170,7 @@ const Dashboard: React.FC = () => {
                                   onMouseEnter={() => setHoveringRefresh(true)}
                                   onMouseLeave={() => setHoveringRefresh(false)}>
                             </span>
+                            {fetchingLogs && <div className='spinner-border spinner-border-sm float-end me-2 mt-1' role='status'></div>}
                         </h4>
                         <div className='overflow-y-auto' style={{
                             maxHeight: '30vh',
@@ -188,7 +208,7 @@ const Dashboard: React.FC = () => {
                 <Row>
                     <Col>
                         <h4 className='text-white'>Rentals
-                            <span className='ms-3 bi-plus float-end' style={{
+                            <span className='bi-plus float-end' style={{
                                 color: hoveringAdd ? 'white' : '#4D5154',
                                 cursor: 'pointer'
                             }}
@@ -196,6 +216,7 @@ const Dashboard: React.FC = () => {
                                   onMouseEnter={() => setHoveringAdd(true)}
                                   onMouseLeave={() => setHoveringAdd(false)}>
                             </span>
+                            {fetchingRentals && <div className='spinner-border spinner-border-sm float-end me-2 mt-1' role='status'></div>}
                         </h4>
                         <div className='overflow-y-auto' style={{
                             maxHeight: '30vh',
@@ -292,7 +313,7 @@ const Dashboard: React.FC = () => {
                 <Modal.Footer style={{width: '100%'}}>
                     <div className='d-flex flex-column' style={{width: '35%'}}>
                         <div className='d-flex justify-content-between'>
-                            <Button variant='danger' onClick={reset}>Cancel</Button>
+                            <Button variant='outline-danger' onClick={reset}>Cancel</Button>
                             <Button variant='primary' onClick={addRental}>Confirm</Button>
                         </div>
                         <div className='mt-2'>

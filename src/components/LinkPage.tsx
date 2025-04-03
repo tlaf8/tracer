@@ -47,7 +47,7 @@ const LinkPage: React.FC = () => {
     return (
         <>
             <Container className='d-flex justify-content-center align-items-center flex-column text-light'>
-                <Row className='mt-5 w-50'>
+                <Row className='mt-5 w-75'>
                     <form onSubmit={async (e) => {
                         e.preventDefault();
                         setStatus(() => 'Connecting...');

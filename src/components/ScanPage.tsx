@@ -14,6 +14,7 @@ const ScanPage: React.FC = () => {
     const [studentName, setStudentName] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
     const [scanning, setScanning] = useState<boolean>(false);
+    const [writing, setWriting] = useState<boolean>(false);
     const [error, setError] = useState<string>('');
 
     // const mock = () => {
@@ -37,12 +38,14 @@ const ScanPage: React.FC = () => {
     };
 
     const reset = () => {
+        setWriting(false);
         setRentalId(null);
         setStudentName(null);
         setIsModalOpen(false);
     };
 
     const handleSubmit = async () => {
+        setWriting(true);
         setError('');
 
         const token = localStorage.getItem('token');
@@ -104,7 +107,7 @@ const ScanPage: React.FC = () => {
                             <p>Rental</p>
                             <p>
                                 {scanning ? (
-                                    rentalId ? rentalId : <span className='loader'></span>
+                                    rentalId ? rentalId : <div className='spinner-border spinner-border-sm' role='status'></div>
                                 ) : (
                                     '...'
                                 )}
@@ -113,7 +116,7 @@ const ScanPage: React.FC = () => {
                         <div className='flex-fill p-2 text-light fw-bolder'>
                             <p>Student</p>
                             {scanning ? (
-                                studentName ? studentName : <span className='loader'></span>
+                                studentName ? studentName : <div className='spinner-border spinner-border-sm' role='status'></div>
                             ) : (
                                 '...'
                             )}
@@ -137,12 +140,13 @@ const ScanPage: React.FC = () => {
                 </Modal.Header>
                 <Modal.Body>
                     <div className='mt-3'>
-                        <p><strong>rental ID:</strong> {rentalId}</p>
+                        <p><strong>Rental:</strong> {rentalId}</p>
                         <p><strong>Student:</strong> {studentName}</p>
                     </div>
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant='danger' onClick={reset}>Cancel</Button>
+                    {writing && <div className='spinner-border spinner-border-sm me-3' role='status'></div>}
+                    <Button variant='outline-danger' onClick={reset}>Cancel</Button>
                     <Button variant='primary' onClick={handleSubmit}>Confirm</Button>
                 </Modal.Footer>
             </Modal>
