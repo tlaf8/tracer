@@ -9,23 +9,23 @@ const Dashboard: React.FC = () => {
     const [hoveringRefresh, setHoveringRefresh] = useState<boolean>(false);
     const [hoveringAdd, setHoveringAdd] = useState<boolean>(false);
     const [hoveringHelp, setHoveringHelp] = useState<boolean>(false);
-    const [deviceModalOpen, setDeviceModalOpen] = useState<boolean>(false);
+    const [rentalModalOpen, setRentalModalOpen] = useState<boolean>(false);
     const [helpModalOpen, setHelpModalOpen] = useState<boolean>(false);
-    const [deviceNames, setDeviceName] = useState<string>('');
+    const [rentalNames, setRentalName] = useState<string>('');
     const [hoveringBulk, setHoveringBulk] = useState<boolean>(false);
     const [inputType, setInputType] = useState<string>('single');
     const [error, setError] = useState<string>('');
 
     const reset = () => {
-        setDeviceName('');
+        setRentalName('');
         setError('');
-        setDeviceModalOpen(false);
+        setRentalModalOpen(false);
     };
 
     const fetchData = async () => {
         const token = localStorage.getItem('token');
         if (!token) {
-            setError('No authentication token found. Please link this device.');
+            setError('No authentication token found. Please link this rental.');
             return;
         }
 
@@ -63,22 +63,22 @@ const Dashboard: React.FC = () => {
         });
     }, [fetchDataCallback]); // Run only once on mount, or when fetchDataCallback changes (it won’t due to useCallback)
 
-    const addDevice = async () => {
+    const addRental = async () => {
         const token = localStorage.getItem('token');
         if (!token) {
-            setError('No authentication token found. Please link this device.');
+            setError('No authentication token found. Please link this rental.');
             return;
         }
 
-        if (deviceNames === '') {
+        if (rentalNames === '') {
             setError('Name required');
             return;
         }
 
         try {
-            const response = await axios.post(`https://sftracer.duckdns.org/api/devices/add`, {
+            const response = await axios.post(`https://sftracer.duckdns.org/api/rentals/add`, {
                 body: {
-                    device: deviceNames,
+                    rental: rentalNames,
                 }
             }, {
                 headers: {
@@ -89,6 +89,7 @@ const Dashboard: React.FC = () => {
 
             console.log(response);
             reset();
+            await fetchData();
         } catch (err) {
             if (isAxiosError(err)) {
                 if (err.response?.status === 400) {
@@ -126,7 +127,7 @@ const Dashboard: React.FC = () => {
                                 <thead className='bg-dark'>
                                 <tr>
                                     <th>ID</th>
-                                    <th>Device</th>
+                                    <th>rental</th>
                                     <th>Action</th>
                                     <th>Student</th>
                                     <th>Date</th>
@@ -137,7 +138,7 @@ const Dashboard: React.FC = () => {
                                 {logs.map(log => (
                                     <tr key={log.id}>
                                         <td>{log.id}</td>
-                                        <td>{log.device}</td>
+                                        <td>{log.rental}</td>
                                         <td>{log.action}</td>
                                         <td>{log.student}</td>
                                         <td>{log.date}</td>
@@ -152,12 +153,12 @@ const Dashboard: React.FC = () => {
 
                 <Row>
                     <Col>
-                        <h4 className='text-white'>Devices
+                        <h4 className='text-white'>Rentals
                             <span className='ms-3 bi-plus float-end' style={{
                                 color: hoveringAdd ? 'white' : '#4D5154',
                                 cursor: 'pointer'
                             }}
-                                  onClick={() => setDeviceModalOpen(true)}
+                                  onClick={() => setRentalModalOpen(true)}
                                   onMouseEnter={() => setHoveringAdd(true)}
                                   onMouseLeave={() => setHoveringAdd(false)}>
                             </span>
@@ -170,14 +171,14 @@ const Dashboard: React.FC = () => {
                             <Table striped bordered hover responsive variant='dark'>
                                 <thead className='bg-dark'>
                                 <tr>
-                                    <th>Device</th>
+                                    <th>Rental</th>
                                     <th>Status</th>
                                 </tr>
                                 </thead>
                                 <tbody>
                                 {status.map(stat => (
                                     <tr key={stat.id}>
-                                        <td>{stat.device}</td>
+                                        <td>{stat.rental}</td>
                                         <td>{stat.status}</td>
                                     </tr>
                                 ))}
@@ -188,7 +189,7 @@ const Dashboard: React.FC = () => {
                 </Row>
             </Container>
 
-            <Modal show={deviceModalOpen} centered data-bs-theme='dark' className='text-light'>
+            <Modal show={rentalModalOpen} centered data-bs-theme='dark' className='text-light'>
                 <Modal.Header>
                     <Modal.Title style={{
                         width: '100%',
@@ -197,7 +198,7 @@ const Dashboard: React.FC = () => {
                         justifyContent: 'space-between',
                         alignItems: 'center'
                     }}>
-                        New device
+                        New rental
                         <span className='ms-3 bi bi-info-circle ' style={{
                             color: hoveringHelp ? 'white' : '#4D5154',
                             cursor: 'pointer',
@@ -215,25 +216,25 @@ const Dashboard: React.FC = () => {
                             <table className='table table-dark table-borderless'>
                                 <tbody>
                                 <tr>
-                                    <td className='text-end align-middle pe-1' style={{width: '24%'}}>Device name:</td>
+                                    <td className='text-end align-middle pe-1' style={{width: '24%'}}>Rental name:</td>
                                     <td>
                                         {inputType === 'single' ? (
                                             <input
                                                 type='text'
                                                 className='form-control bg-dark text-light border-secondary'
-                                                placeholder='Enter name of device'
-                                                value={deviceNames}
+                                                placeholder='Enter name of rental'
+                                                value={rentalNames}
                                                 onChange={(e) => {
-                                                    setDeviceName(e.target.value)
+                                                    setRentalName(e.target.value)
                                                 }}
                                             />
                                         ) : (
                                             <textarea
                                                 className='form-control bg-dark text-light border-secondary'
-                                                placeholder='Enter names of devices'
-                                                value={deviceNames}
+                                                placeholder='Enter names of rentals'
+                                                value={rentalNames}
                                                 onChange={(e) => {
-                                                    setDeviceName(e.target.value)
+                                                    setRentalName(e.target.value)
                                                 }}
                                             ></textarea>
                                         )}
@@ -261,7 +262,7 @@ const Dashboard: React.FC = () => {
                     <div className='d-flex flex-column' style={{width: '35%'}}>
                         <div className='d-flex justify-content-between'>
                             <Button variant='danger' onClick={reset}>Cancel</Button>
-                            <Button variant='primary' onClick={addDevice}>Confirm</Button>
+                            <Button variant='primary' onClick={addRental}>Confirm</Button>
                         </div>
                         <div className='mt-2'>
                             {error && <p className='m-0' style={{color: 'red'}}>Error: {error}</p>}
@@ -285,12 +286,12 @@ const Dashboard: React.FC = () => {
                 </Modal.Header>
                 <Modal.Body>
                     <div className='mb-3' style={{color: '#c4c4c4'}}>
-                        <strong className='text-white'>Single Device</strong><br />
-                        Enter the name of the device and click 'confirm'
+                        <strong className='text-white'>Single Rental</strong><br />
+                        Enter the name of the rental and click 'confirm'
                     </div>
                     <div style={{color: '#c4c4c4'}}>
-                        <strong className='text-white'>Multiple devices</strong><br />
-                        Enter each device according to the following example:
+                        <strong className='text-white'>Multiple rentals</strong><br />
+                        Enter each rental according to the following example:
                         <div className='ms-3'>
                             NAME-01<br />
                             NAME-02<br />

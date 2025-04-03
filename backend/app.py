@@ -9,12 +9,17 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager, get_jwt_identity, create_access_token, jwt_required
 from os.path import exists
 
+
+class RentalNotFoundException(Exception):
+    pass
+
+
 app = Flask(__name__)
-app.config['JWT_SECRET_KEY'] = 'tracer'
+app.config['JWT_SECRET_KEY'] = 'secret'
 jwt = JWTManager(app)
 
 CORS(app, resources={r'/*': {
-    'origins': ['https://tracer.vercel.app'],
+    'origins': ['https://sftracer.duckdns.org', 'http://localhost:5173'],
     'methods': ['GET', 'POST', 'OPTIONS'],
     'allow_headers': ['Content-Type', 'Authorization']
 }})
@@ -39,7 +44,7 @@ def ensure_table(db_name):
     cursor.execute(f'''
         CREATE TABLE IF NOT EXISTS logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            device TEXT NOT NULL,
+            rental TEXT NOT NULL,
             action TEXT NOT NULL,
             student TEXT NOT NULL,
             date TEXT NOT NULL,
@@ -50,7 +55,7 @@ def ensure_table(db_name):
     cursor.execute(f'''
         CREATE TABLE IF NOT EXISTS status (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            device TEXT UNIQUE NOT NULL,
+            rental TEXT UNIQUE NOT NULL,
             status TEXT NOT NULL
         )
     ''')
@@ -59,45 +64,46 @@ def ensure_table(db_name):
     conn.close()
 
 
-def write_entry(db_name, device, student, date, time):
+def write_entry(db_name, rental, student, date, time):
     flip = {'IN': 'OUT', 'OUT': 'IN'}
     ensure_table(db_name)
     conn = sqlite3.connect(f'db/{db_name}.db')
     cursor = conn.cursor()
 
     cursor.execute('''
-        SELECT status FROM status WHERE device = ?
-    ''', (device,))
+        SELECT status FROM status WHERE rental = ?
+    ''', (rental,))
 
-    device_status = cursor.fetchone()[0]
-    if device_status is None:
-        return
+    rental_status = cursor.fetchone()
+    if rental_status is None:
+        conn.close()
+        raise RentalNotFoundException('No rental found')
 
     cursor.execute(f'''
-        INSERT INTO logs (device, action, student, date, time) 
+        INSERT INTO logs (rental, action, student, date, time) 
         VALUES (?, ?, ?, ?, ?)
-    ''', (device, flip[device_status], b64decode(student).decode('utf-8'), date, time))
+    ''', (rental, flip[rental_status[0]], b64decode(student).decode('utf-8'), date, time))
     conn.commit()
 
     cursor.execute(f'''
-        UPDATE status SET status = ? WHERE device = ?
-    ''', (flip[device_status], device))
+        UPDATE status SET status = ? WHERE rental = ?
+    ''', (flip[rental_status[0]], rental))
     conn.commit()
 
     conn.close()
 
 
-def add_device(db_name, devices):
+def add_rental(db_name, rentals):
     ensure_table(db_name)
     conn = sqlite3.connect(f'db/{db_name}.db')
     cursor = conn.cursor()
 
     try:
-        for device in devices:
+        for rental in rentals:
             cursor.execute('''
-                INSERT INTO status (device, status)
+                INSERT INTO status (rental, status)
                 VALUES (?, ?)
-            ''', (device, 'IN',))
+            ''', (rental, 'IN',))
             conn.commit()
 
     except sqlite3.IntegrityError as e:
@@ -109,7 +115,7 @@ def add_device(db_name, devices):
         raise
 
 
-@app.route('/link', methods=['POST'])
+@app.route('/api/link', methods=['POST'])
 def link():
     if not request.is_json:
         return jsonify({'error': 'Request must be JSON'}), 400
@@ -133,7 +139,7 @@ def link():
     return jsonify({'token': token})
 
 
-@app.route('/write', methods=['POST'])
+@app.route('/api/write', methods=['POST'])
 @jwt_required()
 def write_log():
     try:
@@ -148,18 +154,21 @@ def write_log():
 
         db_name = get_jwt_identity()
 
-        required_fields = ['device', 'student', 'date', 'time']
+        required_fields = ['rental', 'student', 'date', 'time']
         if not all(key in body for key in required_fields):
             return jsonify({'error': 'Missing body parameters'}), 400
 
-        write_entry(db_name, body['device'], body['student'], body['date'], body['time'])
+        write_entry(db_name, body['rental'], body['student'], body['date'], body['time'])
         return jsonify({'message': 'Log entry created successfully'}), 201
 
-    except Exception as e:
+    except RentalNotFoundException as e:
+        return jsonify({'error': 'rental does not exist'}), 400
+
+    except (Exception,) as e:
         return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
 
 
-@app.route('/devices/add', methods=['POST'])
+@app.route('/api/rentals/add', methods=['POST'])
 @jwt_required()
 def add():
     try:
@@ -172,11 +181,11 @@ def add():
             return jsonify({'error': 'No body'}), 400
 
         db_name = get_jwt_identity()
-        if 'device' not in body:
-            return jsonify({'error': 'Missing device parameter'}), 400
+        if 'rental' not in body:
+            return jsonify({'error': 'Missing rental parameter'}), 400
 
         try:
-            add_device(db_name, body['device'].split('\n'))
+            add_rental(db_name, body['rental'].split('\n'))
         except sqlite3.IntegrityError as e:
             print(str(e))
             if 'UNIQUE constraint failed' in str(e):
@@ -184,13 +193,13 @@ def add():
             else:
                 raise
 
-        return jsonify({'message': 'Device created successfully'}), 201
+        return jsonify({'message': 'rental created successfully'}), 201
 
     except Exception as e:
         return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
 
 
-@app.route('/logs', methods=['GET'])
+@app.route('/api/logs', methods=['GET'])
 @jwt_required()
 def get_logs():
     db_name = get_jwt_identity()
@@ -205,7 +214,7 @@ def get_logs():
     return jsonify({'logs': logs}), 200
 
 
-@app.route('/status', methods=['GET'])
+@app.route('/api/status', methods=['GET'])
 @jwt_required()
 def get_status():
     try:
@@ -240,4 +249,4 @@ def invalid_token_callback(error):
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=9999, debug=True)
+    app.run(host='0.0.0.0', port=9998, debug=True)

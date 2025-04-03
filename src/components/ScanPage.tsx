@@ -5,18 +5,19 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import {Buffer} from 'buffer';
 import Scanner from './Scanner';
-import axios from 'axios';
+import axios, {isAxiosError} from 'axios';
 
 const ScanPage: React.FC = () => {
     const b64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
     const rentalRegex = /\b\w{1,6}\d{0,4}-\d+\b/;
-    const [deviceId, setDeviceId] = useState<string | null>(null);
+    const [rentalId, setRentalId] = useState<string | null>(null);
     const [studentName, setStudentName] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
     const [scanning, setScanning] = useState<boolean>(false);
+    const [error, setError] = useState<string>('');
 
     // const mock = () => {
-    //     setDeviceId('123');
+    //     setRentalId('123');
     //     setStudentName('test');
     // }
 
@@ -24,58 +25,71 @@ const ScanPage: React.FC = () => {
         if (b64Regex.test(data)) {
             setStudentName(Buffer.from(data, 'base64').toString());
         } else if (rentalRegex.test(data)) {
-            setDeviceId(data);
+            setRentalId(data);
         }
     };
 
     const handleError = (error: string | Error) => {
         if (error !== 'No QR code found') {
+            setError('Unknown error occurred with QR scanner. Check console for details');
             console.error(error);
         }
     };
 
     const reset = () => {
-        setDeviceId(null);
+        setRentalId(null);
         setStudentName(null);
         setIsModalOpen(false);
     };
 
     const handleSubmit = async () => {
+        setError('');
+
         const token = localStorage.getItem('token');
         if (!token) {
-            console.error('No token found');
+            setError('No token found. Please link this rental');
             return;
         }
 
-        if (!deviceId || !studentName) {
-            console.error('Device ID or student name not set correctly');
+        if (!rentalId || !studentName) {
+            setError('Rental or student not set correctly');
             return;
         }
 
         const now = new Date();
-        const response = await axios.post(`https://sftracer.duckdns.org/api/write`, {
-            body: {
-                device: deviceId,
-                student: Buffer.from(studentName).toString('base64'),
-                date: now.toLocaleDateString(),
-                time: now.toLocaleTimeString(),
+        try {
+            await axios.post(`https://sftracer.duckdns.org/api/write`, {
+                body: {
+                    rental: rentalId,
+                    student: Buffer.from(studentName).toString('base64'),
+                    date: now.toLocaleDateString(),
+                    time: now.toLocaleTimeString(),
+                }
+            }, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+        } catch (error) {
+            if (isAxiosError(error)) {
+                if (error.response?.data.error === 'rental does not exist') {
+                    setError('Rental was not found, you can add it in the dashboard');
+                }
+            } else {
+                setError('Unknown error occurred, check console for details');
+                console.error(error);
             }
-        }, {
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            }
-        });
+        }
 
-        console.log(response);
         reset();
-    };
+    }
 
     useEffect(() => {
-        if (deviceId && studentName) {
+        if (rentalId && studentName) {
             setIsModalOpen(true);
         }
-    }, [deviceId, studentName]);
+    }, [rentalId, studentName]);
 
     return (
         <>
@@ -87,10 +101,10 @@ const ScanPage: React.FC = () => {
                 <Row className='d-flex align-items-stretch justify-content-center w-75 overflow-hidden'>
                     <Col md={10} className='d-flex text-center p-3 rounded-pill bg-dark'>
                         <div className='flex-fill p-2 text-light fw-bolder border-end border-secondary'>
-                            <p>Device</p>
+                            <p>Rental</p>
                             <p>
                                 {scanning ? (
-                                    deviceId ? deviceId : <span className='loader'></span>
+                                    rentalId ? rentalId : <span className='loader'></span>
                                 ) : (
                                     '...'
                                 )}
@@ -106,6 +120,9 @@ const ScanPage: React.FC = () => {
                         </div>
                     </Col>
                 </Row>
+                <Row>
+                    {error && <p className='mt-3' style={{color: 'red', fontSize: '16px'}}>{error}</p>}
+                </Row>
             </Container>
 
             {/*<div className='w-100 d-flex align-items-stretch justify-content-center overflow-hidden'>*/}
@@ -120,7 +137,7 @@ const ScanPage: React.FC = () => {
                 </Modal.Header>
                 <Modal.Body>
                     <div className='mt-3'>
-                        <p><strong>Device ID:</strong> {deviceId}</p>
+                        <p><strong>rental ID:</strong> {rentalId}</p>
                         <p><strong>Student:</strong> {studentName}</p>
                     </div>
                 </Modal.Body>

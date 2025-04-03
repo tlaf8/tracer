@@ -22,7 +22,7 @@ const App: React.FC = () => {
                                     localStorage.getItem('token') ? (
                                         <Link className='nav-link' to='/dashboard'>Dashboard</Link>
                                     ) : (
-                                        <Link className='nav-link' to='/link'>Link this device</Link>
+                                        <Link className='nav-link' to='/link'>Link this rental</Link>
                                     )
                                 ) : (
                                     <Link className='nav-link' to='/'>Back</Link>

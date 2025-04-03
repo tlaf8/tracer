@@ -33,11 +33,13 @@ const LinkPage: React.FC = () => {
                 setError(null);
             }, 3000)
         } catch (error) {
+            setStatus('');
             if (isAxiosError(error)) {
-                setError('Error: ' + error.response?.data.error);
+                setError('Network error, check console for details');
+                console.error(error);
             } else {
                 setError('Unknown error occurred. Check console for details');
-                console.log(error);
+                console.error(error);
             }
         }
     }
