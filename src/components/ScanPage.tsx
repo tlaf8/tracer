@@ -53,7 +53,7 @@ const ScanPage: React.FC = () => {
         }
 
         const now = new Date();
-        const response = await axios.post(`${import.meta.env.VITE_HOST}/write`, {
+        const response = await axios.post(`http://localhost:9998/write`, {
             body: {
                 device: deviceId,
                 student: Buffer.from(studentName).toString('base64'),

@@ -11,8 +11,7 @@ const LinkPage: React.FC = () => {
 
     const handleConnect = async () => {
         try {
-            console.log('sending to',`${import.meta.env.VITE_HOST}/link`)
-            const response = await axios.post(`${import.meta.env.VITE_HOST}/link`, {
+            const response = await axios.post(`http://localhost:9998/link`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
