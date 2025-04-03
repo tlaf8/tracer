@@ -30,14 +30,14 @@ const Dashboard: React.FC = () => {
         }
 
         try {
-            const logsResponse = await axios.get(`http://localhost:9998/logs`, {
+            const logsResponse = await axios.get(`https://sftracer.duckdns.org/api/logs`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
             });
             setLogs(logsResponse.data.logs);
 
-            const statusResponse = await axios.get(`http://localhost:9998/status`, {
+            const statusResponse = await axios.get(`https://sftracer.duckdns.org/api/status`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -76,7 +76,7 @@ const Dashboard: React.FC = () => {
         }
 
         try {
-            const response = await axios.post(`http://localhost:9998/devices/add`, {
+            const response = await axios.post(`https://sftracer.duckdns.org/api/devices/add`, {
                 body: {
                     device: deviceNames,
                 }
