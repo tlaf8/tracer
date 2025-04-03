@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import axios, { isAxiosError } from 'axios';
 import { Button, Col, Container, Modal, Row, Table } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import Rental from "./Rental";
 
 const Dashboard: React.FC = () => {
     const [logs, setLogs] = useState<Array<Record<string, string>>>([]);
@@ -54,14 +55,14 @@ const Dashboard: React.FC = () => {
 
     const fetchDataCallback = useCallback(async () => {
         await fetchData();
-    }, []); // Empty dependency array since fetchData doesn't depend on state/props
+    }, []);
 
     useEffect(() => {
         fetchDataCallback().catch(err => {
             setError('Failed fetching data. Check console for details');
             console.error(err);
         });
-    }, [fetchDataCallback]); // Run only once on mount, or when fetchDataCallback changes (it won’t due to useCallback)
+    }, [fetchDataCallback]);
 
     const addRental = async () => {
         const token = localStorage.getItem('token');
@@ -101,6 +102,39 @@ const Dashboard: React.FC = () => {
             }
         }
     };
+
+    const removeRental = async (rental: string) => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            setError('No authentication token found. Please link this rental.');
+            return;
+        }
+
+        try {
+            const response = await axios.post('https://sftracer.duckdns.org/api/rentals/remove', {
+                body: {
+                    rental: rental
+                }
+            }, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+
+            console.log(response);
+            await fetchData();
+        } catch (err) {
+            if (isAxiosError(err)) {
+                if (err.response?.status === 404) {
+                    setError(err.response?.data.error);
+                }
+            } else {
+                setError('Something went wrong, check console for details.');
+                console.error(err);
+            }
+        }
+    }
 
     return (
         <>
@@ -177,10 +211,7 @@ const Dashboard: React.FC = () => {
                                 </thead>
                                 <tbody>
                                 {status.map(stat => (
-                                    <tr key={stat.id}>
-                                        <td>{stat.rental}</td>
-                                        <td>{stat.status}</td>
-                                    </tr>
+                                    <Rental id={stat.id} rental={stat.rental} status={stat.status} onDelete={removeRental}/>
                                 ))}
                                 </tbody>
                             </Table>

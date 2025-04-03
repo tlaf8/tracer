@@ -1,13 +1,12 @@
 import json
 import sqlite3
-import traceback
 from base64 import b64decode
 from datetime import timedelta
-from json import dumps
+from os.path import exists
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, get_jwt_identity, create_access_token, jwt_required
-from os.path import exists
 
 
 class RentalNotFoundException(Exception):
@@ -115,6 +114,27 @@ def add_rental(db_name, rentals):
         raise
 
 
+def remove_rental(db_name, rental):
+    ensure_table(db_name)
+    conn = sqlite3.connect(f'db/{db_name}.db')
+    cursor = conn.cursor()
+
+    print(rental)
+    try:
+        cursor.execute('''
+                DELETE FROM status WHERE rental = ?
+            ''', (rental,))
+        conn.commit()
+
+    except sqlite3.IntegrityError as e:
+        conn.close()
+        raise
+
+    except (Exception,) as e:
+        conn.close()
+        raise
+
+
 @app.route('/api/link', methods=['POST'])
 def link():
     if not request.is_json:
@@ -196,6 +216,30 @@ def add():
         return jsonify({'message': 'rental created successfully'}), 201
 
     except Exception as e:
+        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+
+
+@app.route('/api/rentals/remove', methods=['POST'])
+@jwt_required()
+def remove():
+    try:
+        if not request.is_json:
+            return jsonify({'error': 'Expecting json'}), 400
+
+        data = request.get_json()
+        body = data.get('body')
+        if body is None:
+            return jsonify({'error': 'No body'}), 400
+
+        db_name = get_jwt_identity()
+        if 'rental' not in body:
+            return jsonify({'error': 'Missing rental parameter'}), 400
+
+        remove_rental(db_name, body['rental'])
+
+        return jsonify({'message': 'ok'}), 200
+
+    except RentalNotFoundException as e:
         return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
 
 
