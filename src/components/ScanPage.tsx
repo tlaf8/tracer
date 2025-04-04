@@ -61,7 +61,7 @@ const ScanPage: React.FC = () => {
 
         const now = new Date();
         try {
-            await axios.post(`https://sftracer.duckdns.org/api/write`, {
+            await axios.post(`https://tracer.dedyn.io/api/write`, {
                 body: {
                     rental: rentalId,
                     student: Buffer.from(studentName).toString('base64'),

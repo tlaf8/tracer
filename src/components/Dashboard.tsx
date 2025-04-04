@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import axios, { isAxiosError } from 'axios';
 import { Button, Col, Container, Modal, Row, Table } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import Rental from "./Rental";
+import Rental from './Rental';
+import {Link} from "react-router-dom";
 
 const Dashboard: React.FC = () => {
     const [logs, setLogs] = useState<Array<Record<string, string>>>([]);
@@ -10,6 +11,7 @@ const Dashboard: React.FC = () => {
     const [hoveringRefresh, setHoveringRefresh] = useState<boolean>(false);
     const [hoveringAdd, setHoveringAdd] = useState<boolean>(false);
     const [hoveringHelp, setHoveringHelp] = useState<boolean>(false);
+    const [hoveringStudent, setHoveringStudent] = useState<boolean>(false);
     const [rentalModalOpen, setRentalModalOpen] = useState<boolean>(false);
     const [helpModalOpen, setHelpModalOpen] = useState<boolean>(false);
     const [rentalNames, setRentalName] = useState<string>('');
@@ -39,7 +41,7 @@ const Dashboard: React.FC = () => {
         }
 
         try {
-            const logsResponse = await axios.get(`https://sftracer.duckdns.org/api/logs`, {
+            const logsResponse = await axios.get(`https://tracer.dedyn.io/api/logs`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -47,7 +49,7 @@ const Dashboard: React.FC = () => {
             setLogs(logsResponse.data.logs);
             setFetchingLogs(false);
 
-            const statusResponse = await axios.get(`https://sftracer.duckdns.org/api/status`, {
+            const statusResponse = await axios.get(`https://tracer.dedyn.io/api/status`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -96,7 +98,7 @@ const Dashboard: React.FC = () => {
         }
 
         try {
-            const response = await axios.post(`https://sftracer.duckdns.org/api/rentals/add`, {
+            const response = await axios.post(`https://tracer.dedyn.io/api/rentals/add`, {
                 body: {
                     rental: rentalNames,
                 }
@@ -130,7 +132,7 @@ const Dashboard: React.FC = () => {
         }
 
         try {
-            const response = await axios.post('https://sftracer.duckdns.org/api/rentals/remove', {
+            const response = await axios.post('https://tracer.dedyn.io/api/rentals/remove', {
                 body: {
                     rental: rental
                 }
@@ -236,6 +238,16 @@ const Dashboard: React.FC = () => {
                                 ))}
                                 </tbody>
                             </Table>
+                        </div>
+                        <div className='text-white float-end'
+                             onMouseEnter={() => setHoveringStudent(true)}
+                             onMouseLeave={() => setHoveringStudent(false)}
+                        >
+                            <Link className='' to='/make' style={{
+                                textDecoration: 'none',
+                                color: hoveringStudent ? 'white' : '#4D5154',
+                                fontSize: '0.8rem'
+                            }}>Need Student QR Codes?</Link>
                         </div>
                     </Col>
                 </Row>

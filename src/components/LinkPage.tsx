@@ -11,7 +11,7 @@ const LinkPage: React.FC = () => {
 
     const handleConnect = async () => {
         try {
-            const response = await axios.post(`https://sftracer.duckdns.org/api/link`, {
+            const response = await axios.post(`https://tracer.dedyn.io/api/link`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
