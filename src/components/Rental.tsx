@@ -1,29 +1,23 @@
-import React, {useState} from "react";
+import React from "react";
+import Icon from "./Icon.tsx";
 
 interface RentalProps {
     id: string,
     rental: string,
     status: string,
+    renter: string,
     onDelete: (name: string) => void,
 }
 
-const Rental: React.FC<RentalProps> = ({ id, rental, status, onDelete }) => {
-    const [hovering, setHovering] = useState<boolean>(false);
-
+const Rental: React.FC<RentalProps> = ({ id, rental, status, renter, onDelete }) => {
     return (
         <tr key={id}>
             <td>
                 {rental}
-                <span className='ms-3 bi-x float-end' style={{
-                    color: hovering ? 'orangered' : '#4D5154',
-                    cursor: 'pointer'
-                }}
-                    onMouseEnter={() => setHovering(true)}
-                    onMouseLeave={() => setHovering(false)}
-                    onClick={() => onDelete(rental)}
-                ></span>
+                <Icon className='ms-3 bi-x float-end' onClick={() => onDelete(rental)} hoverColor='orangered' />
             </td>
             <td>{status}</td>
+            <td>{renter}</td>
         </tr>
     )
 }

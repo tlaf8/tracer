@@ -19,15 +19,17 @@ const App: React.FC = () => {
                     <Link className='navbar-brand font-monospace' to='/'>tracer</Link>
                     <div className='collapse navbar-collapse' id='navbarNav'>
                         <ul className='navbar-nav ms-auto'>
-                            <li className='nav-item'>
+                            <li className='nav-item' style={{
+                                width: '5vw',
+                            }}>
                                 {location.pathname === '/' ? (
                                     localStorage.getItem('token') ? (
-                                        <Link className='nav-link' to='/dashboard'>Dashboard</Link>
+                                        <Link className='nav-link float-end' to='/dashboard'>Dashboard</Link>
                                     ) : (
-                                        <Link className='nav-link' to='/link'>Link this device</Link>
+                                        <Link className='nav-link float-end' to='/link'>Link this device</Link>
                                     )
                                 ) : (
-                                    <p className='nav-link m-0 p-0' onClick={() => navigate(-1)} style={{
+                                    <p className='nav-link float-end mb-0' onClick={() => navigate(-1)} style={{
                                         cursor: 'pointer'
                                     }}>Back</p>
                                 )}

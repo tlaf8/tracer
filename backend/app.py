@@ -18,7 +18,11 @@ app.config['JWT_SECRET_KEY'] = 'secret'
 jwt = JWTManager(app)
 
 CORS(app, resources={r'/*': {
-    'origins': ['https://tracer.dedyn.io', 'http://localhost:5173'],
+    'origins': [
+        'https://tracer.dedyn.io',
+        'http://localhost:5173',
+        'http://192.168.1.87:5173'
+    ],
     'methods': ['GET', 'POST', 'OPTIONS'],
     'allow_headers': ['Content-Type', 'Authorization']
 }})

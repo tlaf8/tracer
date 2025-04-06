@@ -1,5 +1,5 @@
 import React from "react";
-import {useState} from 'react';
+import Icon from "./Icon.tsx";
 
 interface QRImageProps {
     key: number,
@@ -23,30 +23,16 @@ const openInNewTab = (base64DataUrl: string) => {
 };
 
 const QRImage: React.FC<QRImageProps> = ({ key, src }) => {
-    const [hoveringDownload, setHoveringDownload] = useState<boolean>(false)
-
     return (
         <div style={{
             border: '1px solid #4D5154',
             borderRadius: '8px'
         }}>
             <div className='d-flex flex-column align-items-end p-2'>
-                <img
-                    key={key}
-                    src={src}
-                    alt={`QR ${key + 1}`}
-                    style={{
-                        width: '150px',
-                    }}
-                />
-                <span className='bi bi-box-arrow-up-right mt-2 me-1' style={{
-                    color: hoveringDownload ? 'white' : '#4D5154',
-                    cursor: 'pointer'
-                }}
-                      onClick={() => openInNewTab(src)}
-                      onMouseEnter={() => setHoveringDownload(true)}
-                      onMouseLeave={() => setHoveringDownload(false)}>
-                </span>
+                <img key={key} src={src} alt={`QR ${key + 1}`} style={{
+                    width: '150px',
+                }} />
+                <Icon className='bi bi-box-arrow-up-right mt-2 me-1' onClick={() => openInNewTab(src)}/>
             </div>
         </div>
     )

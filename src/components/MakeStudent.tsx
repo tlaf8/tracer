@@ -1,6 +1,7 @@
 import React, {useState} from "react";
 import QRCodeGrid from "./QRCodeGrid";
 import {Buffer} from 'buffer';
+import Icon from "./Icon.tsx";
 
 interface QRItem {
     data: string;
@@ -10,9 +11,7 @@ interface QRItem {
 const MakeStudent: React.FC = () => {
     const [studentName, setStudentName] = useState<string>('');
     const [inputType, setInputType] = useState<string>('single');
-    const [hoveringBulk, setHoveringBulk] = useState<boolean>(false);
     const [qrData, setQrData] = useState<QRItem[]>([]);
-    const [hoveringRefresh, setHoveringRefresh] = useState<boolean>(false);
 
     const generateQrData = () => {
         const qrList: QRItem[] = [];
@@ -67,27 +66,11 @@ const MakeStudent: React.FC = () => {
                             ></textarea>
                         )}
                         <div className='float-end'>
-                            <span className='bi bi-chat-left-text me-3' style={{
-                                color: hoveringBulk ? 'white' : '#4D5154',
-                                cursor: 'pointer',
-                                fontSize: '1.5rem'
-                            }}
-                                  onClick={() => {
-                                      setStudentName('');
-                                      setInputType(inputType === 'single' ? 'multi' : 'single')
-                                  }}
-                                  onMouseEnter={() => setHoveringBulk(true)}
-                                  onMouseLeave={() => setHoveringBulk(false)}>
-                            </span>
-                            <span className='bi-arrow-clockwise float-end' style={{
-                                color: hoveringRefresh ? 'white' : '#4D5154',
-                                cursor: 'pointer',
-                                fontSize: '1.5rem'
-                            }}
-                                  onClick={() => generateQrData()}
-                                  onMouseEnter={() => setHoveringRefresh(true)}
-                                  onMouseLeave={() => setHoveringRefresh(false)}>
-                            </span>
+                            <Icon className='bi bi-chat-left-text me-3' onClick={() => {
+                                setStudentName('');
+                                setInputType(inputType === 'single' ? 'multi' : 'single')
+                            }} fontSize='1.5rem' />
+                            <Icon className='bi-arrow-clockwise float-end' onClick={() => generateQrData()} fontSize='1.5rem' />
                         </div>
                     </div>
                 </div>

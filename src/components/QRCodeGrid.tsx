@@ -3,6 +3,7 @@ import QRCode from 'qrcode';
 import QRImage from './QRImage';
 import JSZip from "jszip";
 import {saveAs} from "file-saver";
+import Icon from "./Icon.tsx";
 
 interface QRItem {
     data: string;
@@ -14,6 +15,8 @@ interface QRCodeGridProps {
 }
 
 const downloadQRCodesZip = async (qrData: QRItem[], qrImages: string[]) => {
+    if (!qrData || qrImages.length === 0) return;
+
     const zip = new JSZip();
 
     qrData.forEach((item: QRItem, index: number) => {
@@ -27,7 +30,6 @@ const downloadQRCodesZip = async (qrData: QRItem[], qrImages: string[]) => {
 
 
 const QRCodeGrid: React.FC<QRCodeGridProps> = ({qrData}) => {
-    const [hoveringDownload, setHoveringDownload] = useState<boolean>(false);
     const [qrImages, setQrImages] = useState<string[]>([]);
 
     const generateQRCodes = useCallback(async () => {
@@ -104,15 +106,7 @@ const QRCodeGrid: React.FC<QRCodeGridProps> = ({qrData}) => {
                 bottom: '25px',
                 right: '30px',
             }}>
-                <span className='bi bi-download' style={{
-                    color: hoveringDownload ? 'white' : '#4D5154',
-                    cursor: 'pointer',
-                    fontSize: '2rem',
-                }}
-                      onClick={() => downloadQRCodesZip(qrData, qrImages)}
-                      onMouseEnter={() => setHoveringDownload(true)}
-                      onMouseLeave={() => setHoveringDownload(false)}>
-                </span>
+                <Icon className='bi bi-download' onClick={() => downloadQRCodesZip(qrData, qrImages)} fontSize='2rem' />
             </div>
         </div>
     );
