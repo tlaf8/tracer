@@ -17,7 +17,6 @@ const MakeStudent: React.FC = () => {
     const generateQrData = () => {
         const qrList: QRItem[] = [];
 
-        console.log(studentName.split('\n'));
         studentName.split('\n').map((name) => {
             const stripped = name.replace(/\s/g, '');
             if (stripped !== '') {
@@ -28,7 +27,6 @@ const MakeStudent: React.FC = () => {
             }
         })
 
-        console.log(qrList);
         setQrData(qrList);
     }
 
