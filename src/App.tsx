@@ -1,5 +1,5 @@
 import React from 'react';
-import {Link, Route, Routes, useLocation} from 'react-router-dom';
+import {Link, Route, Routes, useLocation, useNavigate} from 'react-router-dom';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import ScanPage from './components/ScanPage';
@@ -10,6 +10,7 @@ import MakeStudent from './components/MakeStudent'
 
 const App: React.FC = () => {
     const location = useLocation();
+    const navigate = useNavigate();
 
     return (
         <>
@@ -23,10 +24,12 @@ const App: React.FC = () => {
                                     localStorage.getItem('token') ? (
                                         <Link className='nav-link' to='/dashboard'>Dashboard</Link>
                                     ) : (
-                                        <Link className='nav-link' to='/link'>Link this rental</Link>
+                                        <Link className='nav-link' to='/link'>Link this device</Link>
                                     )
                                 ) : (
-                                    <Link className='nav-link' to='/'>Back</Link>
+                                    <p className='nav-link m-0 p-0' onClick={() => navigate(-1)} style={{
+                                        cursor: 'pointer'
+                                    }}>Back</p>
                                 )}
                             </li>
                         </ul>

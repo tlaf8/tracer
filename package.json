@@ -10,12 +10,19 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@types/node": "^22.14.0",
     "axios": "^1.8.4",
     "bootstrap": "^5.3.3",
     "bootstrap-icons": "^1.11.3",
     "buffer": "^6.0.3",
+    "canvas": "^3.1.0",
+    "file-saver": "^2.0.5",
     "framer-motion": "^12.4.3",
+    "install": "^0.13.0",
+    "jszip": "^3.10.1",
+    "npm": "^11.2.0",
     "qr-scanner": "^1.4.2",
+    "qrcode": "^1.5.4",
     "react": "^19.0.0",
     "react-bootstrap": "^2.10.9",
     "react-dom": "^19.0.0",
@@ -23,6 +30,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
+    "@types/file-saver": "^2.0.7",
+    "@types/qrcode": "^1.5.5",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
     "@vitejs/plugin-react-swc": "^3.5.0",

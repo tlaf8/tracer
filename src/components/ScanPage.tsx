@@ -18,8 +18,8 @@ const ScanPage: React.FC = () => {
     const [error, setError] = useState<string>('');
 
     // const mock = () => {
-    //     setRentalId('123');
-    //     setStudentName('test');
+    //     setRentalId('SF219-1');
+    //     setStudentName('Mock');
     // }
 
     const handleScan = (data: string) => {
@@ -147,7 +147,7 @@ const ScanPage: React.FC = () => {
                 <Modal.Footer>
                     {writing && <div className='spinner-border spinner-border-sm me-3' role='status'></div>}
                     <Button variant='outline-danger' onClick={reset}>Cancel</Button>
-                    <Button variant='primary' onClick={handleSubmit}>Confirm</Button>
+                    <Button variant='outline-primary' onClick={handleSubmit}>Confirm</Button>
                 </Modal.Footer>
             </Modal>
         </>

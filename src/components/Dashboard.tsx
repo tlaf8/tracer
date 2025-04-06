@@ -239,14 +239,14 @@ const Dashboard: React.FC = () => {
                                 </tbody>
                             </Table>
                         </div>
-                        <div className='text-white float-end'
+                        <div className='float-end mt-2'
                              onMouseEnter={() => setHoveringStudent(true)}
                              onMouseLeave={() => setHoveringStudent(false)}
                         >
-                            <Link className='' to='/make' style={{
+                            <Link to='/make' style={{
                                 textDecoration: 'none',
                                 color: hoveringStudent ? 'white' : '#4D5154',
-                                fontSize: '0.8rem'
+                                fontSize: '0.9rem'
                             }}>Need Student QR Codes?</Link>
                         </div>
                     </Col>
@@ -326,7 +326,7 @@ const Dashboard: React.FC = () => {
                     <div className='d-flex flex-column' style={{width: '35%'}}>
                         <div className='d-flex justify-content-between'>
                             <Button variant='outline-danger' onClick={reset}>Cancel</Button>
-                            <Button variant='primary' onClick={addRental}>Confirm</Button>
+                            <Button variant='outline-primary' onClick={addRental}>Confirm</Button>
                         </div>
                         <div className='mt-2'>
                             {error && <p className='m-0' style={{color: 'red'}}>Error: {error}</p>}
@@ -354,7 +354,7 @@ const Dashboard: React.FC = () => {
                         Enter the name of the rental and click 'confirm'
                     </div>
                     <div style={{color: '#c4c4c4'}}>
-                        <strong className='text-white'>Multiple rentals</strong><br />
+                        <strong className='text-white'>Multiple Rentals</strong><br />
                         Enter each rental according to the following example:
                         <div className='ms-3'>
                             NAME-01<br />
