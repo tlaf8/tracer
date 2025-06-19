@@ -277,6 +277,35 @@ def get_status():
         return jsonify({'error': f'Failed to fetch status: {str(e)}'}), 500
 
 
+@app.route('/api/export', methods=['GET'])
+@jwt_required()
+def export_logs():
+    try:
+        db_name = get_jwt_identity()
+        conn = sqlite3.connect(f'db/{db_name}.db')
+        conn.text_factory = str
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM logs')
+        columns = [description[0] for description in cursor.description]
+        data = cursor.fetchall()
+        conn.close()
+
+        output = StringIO()
+        writer = csv.writer(output)
+        writer.writerow(columns)
+        writer.writerows(data)
+
+        output.seek(0)
+        return Response(
+            output.getvalue(),
+            mimetype='text/csv',
+            headers={"Content-Disposition": f"attachment;filename={db_name}_logs.csv"}
+        )
+
+    except (Exception,) as e:
+        return jsonify({'error': f'Failed to export logs: {str(e)}'}), 500
+
+
 @jwt.unauthorized_loader
 def unauthorized_callback(error):
     return jsonify({
