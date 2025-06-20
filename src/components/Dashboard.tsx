@@ -205,6 +205,39 @@ const Dashboard: React.FC = () => {
         }
     }
 
+    const exportCsv = async () => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            setError('No authentication token found. Please link this rental.');
+            return;
+        }
+
+        try {
+            const response = await axios.get('https://tracer.dedyn.io/api/export', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                responseType: 'blob'
+            });
+
+            const url = window.URL.createObjectURL(new Blob([response.data], { type: 'text/csv' }));
+            const link = document.createElement('a');
+            const contentDisposition = response.headers['content-disposition'];
+            const filename = contentDisposition ? contentDisposition.split('filename=')[1]?.replace(/"/g, '') : 'logs.csv';
+
+            link.href = url;
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            setError('Cannot export data to csv, check console for details.');
+            console.error(err);
+        }
+    };
+
     useEffect(() => {
         fetchDataCallback().catch(err => {
             setError('Failed fetching data. Check console for details');
@@ -221,7 +254,7 @@ const Dashboard: React.FC = () => {
                         <h4 className='text-white'>Logs
                             <Icon className='bi-arrow-clockwise float-end' onClick={fetchDataCallback}/>
                             <Icon className='bi bi-file-earmark-arrow-down me-2 float-end'
-                                  onClick={() => alert('export csv')}/>
+                                  onClick={() => exportCsv()}/>
                             {fetchingLogs && <div className='spinner-border spinner-border-sm float-end me-2 mt-1'
                                                   role='status'></div>}
                         </h4>
