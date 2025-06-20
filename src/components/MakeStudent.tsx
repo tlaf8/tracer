@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import QRCodeGrid from "./QRCodeGrid";
 import {Buffer} from 'buffer';
 import Icon from "./Icon.tsx";
@@ -9,25 +9,26 @@ interface QRItem {
 }
 
 const MakeStudent: React.FC = () => {
-    const [studentName, setStudentName] = useState<string>('');
-    const [inputType, setInputType] = useState<string>('single');
+    const [rawString, setRawString] = useState<string>('');
+    const [dataList, setDataList] = useState<Array<string>>([]);
     const [qrData, setQrData] = useState<QRItem[]>([]);
 
-    const generateQrData = () => {
-        const qrList: QRItem[] = [];
-
-        studentName.split('\n').map((name) => {
-            const stripped = name.replace(/\s/g, '');
-            if (stripped !== '') {
-                qrList.push({
-                    data: Buffer.from(stripped).toString('base64'),
-                    label: name,
-                })
-            }
-        })
-
-        setQrData(qrList);
+    const onDelete = (index: number) => {
+        const newList = [...dataList];
+        newList.splice(index, 1);
+        setDataList(newList);
     }
+
+    useEffect(() => {
+        const newQrData: QRItem[] = [];
+        dataList.map((item: string) => {
+            newQrData.push({
+                data: Buffer.from(item).toString('base64'),
+                label: item
+            });
+        })
+        setQrData(newQrData);
+    }, [dataList]);
 
     return (
         <>
@@ -41,37 +42,35 @@ const MakeStudent: React.FC = () => {
                     alignItems: 'center',
                     marginTop: '10vh'
                 }}>
-                    <div className='w-75 text-light'>
-                        Enter student name(s):
+                    <div className='w-75 text-light mb-1'>
+                        Enter student or device name(s):
                     </div>
                     <div className='w-75 text-light d-flex flex-column align-items-end'>
-                        {inputType === 'single' ? (
-                            <input
-                                type='text'
-                                className='form-control bg-dark text-light border-secondary'
-                                placeholder='Enter name of student'
-                                value={studentName}
-                                onChange={(e) => {
-                                    setStudentName(e.target.value)
-                                }}
-                            />
-                        ) : (
-                            <textarea
-                                className='form-control bg-dark text-light border-secondary'
-                                placeholder='Enter names of students'
-                                value={studentName}
-                                onChange={(e) => {
-                                    setStudentName(e.target.value);
-                                }}
-                            ></textarea>
-                        )}
-                        <div className='float-end'>
-                            <Icon className='bi bi-chat-left-text me-3' onClick={() => {
-                                setStudentName('');
-                                setInputType(inputType === 'single' ? 'multi' : 'single')
-                            }} fontSize='1.5rem' />
-                            <Icon className='bi-arrow-clockwise float-end' onClick={() => generateQrData()} fontSize='1.5rem' />
-                        </div>
+                        <input
+                            className='form-control bg-dark text-light border-secondary'
+                            value={rawString}
+                            onChange={(e) => {
+                                setRawString(e.target.value);
+                            }}
+                            onKeyDown={(k) => {
+                                const trimmed = rawString.trim();
+                                if (k.key === 'Enter' && trimmed !== '') {
+                                    setDataList([...dataList, trimmed]);
+                                    setRawString('');
+                                }
+                            }}
+                        ></input>
+                    </div>
+                    <div className='w-75 mt-1 text-light'>
+                        {dataList.map((item, i) => (
+                            <div className='p-2 mt-1' key={i} style={{
+                                border: '1px solid #4D5154',
+                                borderRadius: 'var(--bs-border-radius)'
+                            }}>
+                                {item}
+                                <Icon className='bi bi-x float-end' onClick={() => onDelete(i)} hoverColor='orangered'/>
+                            </div>
+                        ))}
                     </div>
                 </div>
                 <div style={{

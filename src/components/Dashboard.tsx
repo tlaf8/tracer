@@ -334,7 +334,7 @@ const Dashboard: React.FC = () => {
                                 textDecoration: 'none',
                                 color: hoveringStudent ? 'white' : '#4D5154',
                                 fontSize: '0.9rem'
-                            }}>Need Student QR Codes?</Link>
+                            }}>Need QR Codes?</Link>
                         </div>
                     </Col>
                 </Row>
