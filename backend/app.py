@@ -76,7 +76,7 @@ def write_entry(db_name, rental, student, date, time):
 
     try:
         cursor.execute('''
-            SELECT status FROM status WHERE rental = ?
+            SELECT status, renter FROM status WHERE rental = ?
         ''', (rental,))
 
         rental_status = cursor.fetchone()
@@ -90,9 +90,15 @@ def write_entry(db_name, rental, student, date, time):
         ''', (rental, flip[rental_status[0]], b64decode(student).decode('utf-8'), date, time))
         conn.commit()
 
+        new_status = flip[rental_status[0]]
         cursor.execute(f'''
-            UPDATE status SET status = ? WHERE rental = ?
-        ''', (flip[rental_status[0]], rental))
+            UPDATE status SET status = ?, renter = ? WHERE rental = ?
+        ''', (
+            new_status,
+            b64decode(student).decode('utf-8') if new_status == 'OUT' else '',
+            rental
+        ))
+
         conn.commit()
         conn.close()
 

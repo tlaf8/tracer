@@ -113,6 +113,8 @@ const Dashboard: React.FC = () => {
                 return naturalCompare(a.rental, b.rental);
             });
 
+            console.log(sortedStatus);
+
             setStatus(sortedStatus);
             setFetchingRentals(false);
 
@@ -226,15 +228,11 @@ const Dashboard: React.FC = () => {
                 return;
             }
 
-            // Get the filename from the response or use a default
             const filename = response.data?.headers?.['Content-Disposition']?.split('filename=')[1]?.replace(/"/g, '') || 'logs.csv';
-            
-            // Create a Blob from the CSV data
             const blob = new Blob([response.data.csv], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
-            
-            // Create and trigger download
             const link = document.createElement('a');
+
             link.href = url;
             link.download = filename;
             document.body.appendChild(link);
