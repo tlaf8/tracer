@@ -95,7 +95,7 @@ const Dashboard: React.FC = () => {
         }
 
         try {
-            const logsResponse = await axios.get(`https://tracer.dedyn.io/api/logs`, {
+            const logsResponse = await axios.get(`http://localhost:9998/api/logs`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -103,7 +103,7 @@ const Dashboard: React.FC = () => {
             setLogs(logsResponse.data.logs);
             setFetchingLogs(false);
 
-            const statusResponse = await axios.get(`https://tracer.dedyn.io/api/status`, {
+            const statusResponse = await axios.get(`http://localhost:9998/api/status`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -146,7 +146,7 @@ const Dashboard: React.FC = () => {
         }
 
         try {
-            const response = await axios.post(`https://tracer.dedyn.io/api/rentals/add`, {
+            const response = await axios.post(`http://localhost:9998/api/rentals/add`, {
                 body: {
                     rental: rentalNames,
                 }
@@ -180,7 +180,7 @@ const Dashboard: React.FC = () => {
         }
 
         try {
-            const response = await axios.post('https://tracer.dedyn.io/api/rentals/remove', {
+            const response = await axios.post('http://localhost:9998/api/rentals/remove', {
                 body: {
                     rental: rental
                 }
@@ -213,28 +213,37 @@ const Dashboard: React.FC = () => {
         }
 
         try {
-            const response = await axios.get('https://tracer.dedyn.io/api/export', {
+            const response = await axios.get('http://localhost:9998/api/export', {
                 headers: {
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
                 },
-                responseType: 'blob'
+                responseType: 'json'
             });
 
-            const url = window.URL.createObjectURL(new Blob([response.data], { type: 'text/csv' }));
-            const link = document.createElement('a');
-            const contentDisposition = response.headers['content-disposition'];
-            const filename = contentDisposition ? contentDisposition.split('filename=')[1]?.replace(/"/g, '') : 'logs.csv';
+            if (!response.data || !response.data.csv) {
+                setError('No data to export');
+                return;
+            }
 
+            // Get the filename from the response or use a default
+            const filename = response.data?.headers?.['Content-Disposition']?.split('filename=')[1]?.replace(/"/g, '') || 'logs.csv';
+            
+            // Create a Blob from the CSV data
+            const blob = new Blob([response.data.csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            
+            // Create and trigger download
+            const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', filename);
+            link.download = filename;
             document.body.appendChild(link);
             link.click();
-
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
         } catch (err) {
-            setError('Cannot export data to csv, check console for details.');
-            console.error(err);
+            setError('Cannot export data to CSV. Please try again.');
+            console.error('Export error:', err);
         }
     };
 

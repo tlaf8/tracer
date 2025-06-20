@@ -1,11 +1,12 @@
+import csv
 import json
 import sqlite3
 from base64 import b64decode
 from datetime import timedelta
 from os.path import exists
-
-from flask import Flask, request, jsonify
+from io import StringIO
 from flask_cors import CORS
+from flask import Flask, request, jsonify
 from flask_jwt_extended import JWTManager, get_jwt_identity, create_access_token, jwt_required
 
 
@@ -19,7 +20,7 @@ jwt = JWTManager(app)
 
 CORS(app, resources={r'/*': {
     'origins': [
-        'https://tracer.dedyn.io',
+        'http://localhost:9998',
         'http://localhost:5173',
         'http://192.168.1.87:5173'
     ],
@@ -296,11 +297,14 @@ def export_logs():
         writer.writerows(data)
 
         output.seek(0)
-        return Response(
-            output.getvalue(),
-            mimetype='text/csv',
-            headers={"Content-Disposition": f"attachment;filename={db_name}_logs.csv"}
-        )
+
+        return jsonify({
+            'csv': output.getvalue(),
+            'mimetype': 'text/csv',
+            'headers': {
+                'Content-Disposition': f'attachment;filename={db_name}_logs.csv'
+            }
+        })
 
     except (Exception,) as e:
         return jsonify({'error': f'Failed to export logs: {str(e)}'}), 500
