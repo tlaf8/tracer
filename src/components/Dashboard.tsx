@@ -113,8 +113,6 @@ const Dashboard: React.FC = () => {
                 return naturalCompare(a.rental, b.rental);
             });
 
-            console.log(sortedStatus);
-
             setStatus(sortedStatus);
             setFetchingRentals(false);
 
@@ -148,7 +146,7 @@ const Dashboard: React.FC = () => {
         }
 
         try {
-            const response = await axios.post(`http://localhost:9998/api/rentals/add`, {
+            await axios.post(`http://localhost:9998/api/rentals/add`, {
                 body: {
                     rental: rentalNames,
                 }
@@ -159,7 +157,6 @@ const Dashboard: React.FC = () => {
                 }
             });
 
-            console.log(response);
             reset();
             await fetchDataCallback();
         } catch (err) {

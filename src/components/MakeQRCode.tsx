@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, {useState} from "react";
 import QRCodeGrid from "./QRCodeGrid";
 import {Buffer} from 'buffer';
 import Icon from "./Icon.tsx";
@@ -74,11 +74,11 @@ const MakeQRCode: React.FC = () => {
                     </div>
                     <div className='w-75 mt-1 text-light'>
                         {dataList.map((item, i) => (
-                            <div className='p-2 mt-1' key={i} style={{
+                            <div className='p-2 mt-1 d-flex flex-row justify-content-between' key={i} style={{
                                 border: '1px solid #4D5154',
                                 borderRadius: 'var(--bs-border-radius)'
                             }}>
-                                {item}
+                                <div style={{ maxWidth: '90%', textOverflow: 'ellipsis', overflow: 'hidden'}}>{item}</div>
                                 <Icon className='bi bi-x float-end' onClick={() => onDelete(i)} hoverColor='orangered'/>
                             </div>
                         ))}
@@ -86,7 +86,6 @@ const MakeQRCode: React.FC = () => {
                 </div>
                 <div style={{
                     width: '60vw',
-                    borderLeft: '3px solid #212529',
                 }}>
                     <QRCodeGrid qrData={qrData}/>
                 </div>
