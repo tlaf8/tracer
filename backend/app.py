@@ -316,6 +316,23 @@ def export_logs():
         return jsonify({'error': f'Failed to export logs: {str(e)}'}), 500
 
 
+@app.route('/api/clear', methods=['GET'])
+@jwt_required()
+def clear_logs():
+    try:
+        db_name = get_jwt_identity()
+        conn = sqlite3.connect(f'db/{db_name}.db')
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM logs')
+        cursor.execute('UPDATE sqlite_sequence SET seq=0 WHERE name="logs"')
+        conn.commit()
+        conn.close()
+        return jsonify({'message': 'Logs cleared'}), 200
+    except (Exception,) as e:
+
+        return jsonify({'error': f'Failed to clear logs: {str(e)}'}), 500
+
+
 @jwt.unauthorized_loader
 def unauthorized_callback(error):
     return jsonify({

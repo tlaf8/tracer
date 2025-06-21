@@ -20,7 +20,7 @@ const App: React.FC = () => {
                     <div className='collapse navbar-collapse' id='navbarNav'>
                         <ul className='navbar-nav ms-auto'>
                             <li className='nav-item' style={{
-                                width: '5vw',
+                                width: '10vw',
                             }}>
                                 {location.pathname === '/' ? (
                                     localStorage.getItem('token') ? (

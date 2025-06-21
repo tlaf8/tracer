@@ -107,7 +107,7 @@ const ScanPage: React.FC = () => {
                             <p>Rental</p>
                             <p>
                                 {scanning ? (
-                                    rentalId ? rentalId : <div className='spinner-border spinner-border-sm' role='status'></div>
+                                    rentalId ? rentalId : <span className='spinner-border spinner-border-sm' role='status'></span>
                                 ) : (
                                     '...'
                                 )}
@@ -116,7 +116,7 @@ const ScanPage: React.FC = () => {
                         <div className='flex-fill p-2 text-light fw-bolder'>
                             <p>Student</p>
                             {scanning ? (
-                                studentName ? studentName : <div className='spinner-border spinner-border-sm' role='status'></div>
+                                studentName ? studentName : <span className='spinner-border spinner-border-sm' role='status'></span>
                             ) : (
                                 '...'
                             )}

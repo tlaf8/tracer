@@ -34,7 +34,7 @@ const MakeQRCode: React.FC = () => {
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    marginTop: '10vh'
+                    marginTop: '5vh'
                 }}>
                     <div className='w-75 text-light mb-1'>
                         Enter student or device name(s):

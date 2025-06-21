@@ -3,8 +3,8 @@ import axios, {isAxiosError} from 'axios';
 import {Button, Col, Container, Modal, Row, Table} from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Rental from './Rental';
-import {Link} from "react-router-dom";
-import Icon from "./Icon";
+import {Link} from 'react-router-dom';
+import Icon from './Icon';
 
 interface Status {
     id: number;
@@ -69,6 +69,7 @@ const Dashboard: React.FC = () => {
     const [hoveringStudent, setHoveringStudent] = useState<boolean>(false);
     const [rentalModalOpen, setRentalModalOpen] = useState<boolean>(false);
     const [helpModalOpen, setHelpModalOpen] = useState<boolean>(false);
+    const [clearModalOpen, setClearModalOpen] = useState<boolean>(false);
     const [rentalNames, setRentalName] = useState<string>('');
     const [inputType, setInputType] = useState<string>('single');
     const [fetchingRentals, setFetchingRentals] = useState<boolean>(false);
@@ -225,7 +226,7 @@ const Dashboard: React.FC = () => {
                 return;
             }
 
-            const filename = response.data?.headers?.['Content-Disposition']?.split('filename=')[1]?.replace(/"/g, '') || 'logs.csv';
+            const filename = response.data?.headers?.['Content-Disposition']?.split('filename=')[1]?.replace(/'/g, '') || 'logs.csv';
             const blob = new Blob([response.data.csv], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
@@ -233,12 +234,40 @@ const Dashboard: React.FC = () => {
             link.href = url;
             link.download = filename;
             document.body.appendChild(link);
-            link.click();
+            // link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
+            setClearModalOpen(true);
         } catch (err) {
             setError('Cannot export data to CSV. Please try again.');
             console.error('Export error:', err);
+        }
+    };
+
+    const clearLogs = async () => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            setError('No authentication token found. Please link this rental.');
+        }
+
+        try {
+            await axios.get('http://localhost:9998/api/clear', {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            setClearModalOpen(false);
+        } catch (err) {
+            if (isAxiosError(err)) {
+                if (err.response?.status === 400) {
+                    setError(err.response?.data.error);
+                }
+            } else {
+                setError('Something went wrong, check console for details.');
+                console.error(err);
+            }
         }
     };
 
@@ -331,7 +360,7 @@ const Dashboard: React.FC = () => {
                                 textDecoration: 'none',
                                 color: hoveringStudent ? 'white' : '#4D5154',
                                 fontSize: '0.9rem'
-                            }}>Need QR Codes?</Link>
+                            }}>Create QR Codes</Link>
                         </div>
                     </Col>
                 </Row>
@@ -406,15 +435,14 @@ const Dashboard: React.FC = () => {
             </Modal>
 
             <Modal
-                size="sm"
+                size='sm'
                 show={helpModalOpen}
                 onHide={() => setHelpModalOpen(false)}
                 data-bs-theme='dark'
                 className='text-light'
-                aria-labelledby="example-modal-sizes-title-sm"
             >
                 <Modal.Header closeButton>
-                    <Modal.Title id="example-modal-sizes-title-sm">
+                    <Modal.Title>
                         Help
                     </Modal.Title>
                 </Modal.Header>
@@ -433,6 +461,36 @@ const Dashboard: React.FC = () => {
                         </div>
                     </div>
                 </Modal.Body>
+            </Modal>
+
+            <Modal
+                centered
+                show={clearModalOpen}
+                onHide={() => setClearModalOpen(false)}
+                data-bs-theme='dark'
+                className='text-light'
+            >
+                <Modal.Header closeButton>
+                    <Modal.Title>
+                        Clear Logs
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <div className='mb-3' style={{color: '#c4c4c4'}}>
+                        A copy of logs have been downloaded to your device in a format compatible with Excel, do you want to clear logs?
+                    </div>
+                </Modal.Body>
+                <Modal.Footer>
+                    <div className='d-flex flex-column'>
+                        <div className='d-flex justify-content-between'>
+                            <Button variant='outline-danger me-2' onClick={() => setClearModalOpen(false)}>No</Button>
+                            <Button variant='outline-primary' onClick={clearLogs}>Yes</Button>
+                        </div>
+                        <div className='mt-2'>
+                            {error && <p className='m-0' style={{color: 'red'}}>Error: {error}</p>}
+                        </div>
+                    </div>
+                </Modal.Footer>
             </Modal>
         </>
     );
