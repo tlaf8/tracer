@@ -5,30 +5,24 @@ import Icon from "./Icon.tsx";
 
 interface QRItem {
     data: string;
+    encoding: boolean;
     label: string;
 }
 
 const MakeStudent: React.FC = () => {
     const [rawString, setRawString] = useState<string>('');
+    const [b64encode, setB64encode] = useState<boolean>(true);
     const [dataList, setDataList] = useState<Array<string>>([]);
     const [qrData, setQrData] = useState<QRItem[]>([]);
 
     const onDelete = (index: number) => {
         const newList = [...dataList];
+        const newQrData = [...qrData];
         newList.splice(index, 1);
+        newQrData.splice(index, 1);
         setDataList(newList);
-    }
-
-    useEffect(() => {
-        const newQrData: QRItem[] = [];
-        dataList.map((item: string) => {
-            newQrData.push({
-                data: Buffer.from(item).toString('base64'),
-                label: item
-            });
-        })
         setQrData(newQrData);
-    }, [dataList]);
+    }
 
     return (
         <>
@@ -46,20 +40,37 @@ const MakeStudent: React.FC = () => {
                         Enter student or device name(s):
                     </div>
                     <div className='w-75 text-light d-flex flex-column align-items-end'>
-                        <input
-                            className='form-control bg-dark text-light border-secondary'
-                            value={rawString}
-                            onChange={(e) => {
-                                setRawString(e.target.value);
-                            }}
-                            onKeyDown={(k) => {
-                                const trimmed = rawString.trim();
-                                if (k.key === 'Enter' && trimmed !== '') {
-                                    setDataList([...dataList, trimmed]);
-                                    setRawString('');
-                                }
-                            }}
-                        ></input>
+                        <div className='input-group mb-3'>
+                            <input
+                                className='form-control bg-dark text-light border-secondary'
+                                value={rawString}
+                                onChange={(e) => {
+                                    setRawString(e.target.value);
+                                }}
+                                onKeyDown={(k) => {
+                                    const trimmed = rawString.trim();
+                                    if (k.key === 'Enter' && trimmed !== '') {
+                                        setDataList([...dataList, trimmed]);
+                                        setQrData([...qrData, {
+                                            data: b64encode ? Buffer.from(trimmed).toString('base64') : trimmed,
+                                            encoding: b64encode,
+                                            label: trimmed
+                                        }])
+                                        setRawString('');
+                                    }
+                                }}
+                            ></input>
+                            <button className='btn btn-outline-secondary dropdown-toggle' type='button'
+                                    data-bs-toggle='dropdown' aria-expanded='false'>{b64encode ? 'Student' : 'Device'}
+                            </button>
+                            <ul className='dropdown-menu dropdown-menu-end bg-dark'>
+                                <li>
+                                    <button className='dropdown-item bg-dark text-light' onClick={() => {
+                                        setB64encode(!b64encode);
+                                    }}>{b64encode ? 'Device' : 'Student'}</button>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
                     <div className='w-75 mt-1 text-light'>
                         {dataList.map((item, i) => (
@@ -77,7 +88,7 @@ const MakeStudent: React.FC = () => {
                     width: '60vw',
                     borderLeft: '3px solid #212529',
                 }}>
-                    <QRCodeGrid qrData={qrData} />
+                    <QRCodeGrid qrData={qrData}/>
                 </div>
             </div>
         </>
