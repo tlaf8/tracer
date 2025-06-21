@@ -70,14 +70,13 @@ const Dashboard: React.FC = () => {
     const [rentalModalOpen, setRentalModalOpen] = useState<boolean>(false);
     const [helpModalOpen, setHelpModalOpen] = useState<boolean>(false);
     const [clearModalOpen, setClearModalOpen] = useState<boolean>(false);
-    const [rentalNames, setRentalName] = useState<string>('');
-    const [inputType, setInputType] = useState<string>('single');
     const [fetchingRentals, setFetchingRentals] = useState<boolean>(false);
     const [fetchingLogs, setFetchingLogs] = useState<boolean>(false);
     const [error, setError] = useState<string>('');
+    const [rawString, setRawString] = useState<string>('');
+    const [rentalList, setRentalList] = useState<Array<string>>([]);
 
     const reset = () => {
-        setRentalName('');
         setError('');
         setFetchingRentals(false);
         setFetchingLogs(false);
@@ -141,7 +140,7 @@ const Dashboard: React.FC = () => {
             return;
         }
 
-        if (rentalNames === '') {
+        if (rentalList.length === 0) {
             setError('Name required');
             return;
         }
@@ -149,7 +148,7 @@ const Dashboard: React.FC = () => {
         try {
             await axios.post(`http://localhost:9998/api/rentals/add`, {
                 body: {
-                    rental: rentalNames,
+                    rentals: rentalList,
                 }
             }, {
                 headers: {
@@ -271,6 +270,12 @@ const Dashboard: React.FC = () => {
         }
     };
 
+    const onDelete = (index: number) => {
+        const newList = [...rentalList];
+        newList.splice(index, 1);
+        setRentalList(newList);
+   }
+
     useEffect(() => {
         fetchDataCallback().catch(err => {
             setError('Failed fetching data. Check console for details');
@@ -366,7 +371,7 @@ const Dashboard: React.FC = () => {
                 </Row>
             </Container>
 
-            <Modal show={rentalModalOpen} centered data-bs-theme='dark' className='text-light'>
+            <Modal show={rentalModalOpen} data-bs-theme='dark' className='text-light'>
                 <Modal.Header>
                     <Modal.Title style={{
                         width: '100%',
@@ -381,43 +386,38 @@ const Dashboard: React.FC = () => {
                 </Modal.Header>
                 <Modal.Body>
                     <div>
-                        <div className='table-responsive'>
-                            <table className='table table-dark table-borderless'>
-                                <tbody>
-                                <tr>
-                                    <td className='text-end align-middle' style={{width: '24%'}}>Rental name:</td>
-                                    <td>
-                                        {inputType === 'single' ? (
-                                            <input
-                                                type='text'
-                                                className='form-control bg-dark text-light border-secondary'
-                                                placeholder='Enter name of rental'
-                                                value={rentalNames}
-                                                onChange={(e) => {
-                                                    setRentalName(e.target.value)
-                                                }}
-                                            />
-                                        ) : (
-                                            <textarea
-                                                className='form-control bg-dark text-light border-secondary'
-                                                placeholder='Enter names of rentals'
-                                                value={rentalNames}
-                                                onChange={(e) => {
-                                                    setRentalName(e.target.value)
-                                                }}
-                                            ></textarea>
-                                        )}
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td></td>
-                                    <td className='float-end me-2 p-0'>
-                                        <Icon className='bi bi-chat-left-text'
-                                              onClick={() => setInputType(inputType === 'single' ? 'multi' : 'single')}/>
-                                    </td>
-                                </tr>
-                                </tbody>
-                            </table>
+                        <div>
+                            Enter new name of device:
+                        </div>
+                        <div className='mt-3'>
+                            <input
+                            className='form-control bg-dark text-light border-secondary'
+                            value={rawString}
+                            onChange={(e) => {
+                                setRawString(e.target.value);
+                            }}
+                            onKeyDown={(k) => {
+                                const trimmed = rawString.trim();
+                                if (k.key === 'Enter' && trimmed !== '') {
+                                    setRentalList([...rentalList, trimmed]);
+                                    setRawString('');
+                                }
+                            }}
+                            ></input>
+                            <div className='mt-3' style={{
+                                maxHeight: '50vh',
+                                overflow: 'scroll',
+                            }}>
+                                {rentalList.map((item, i) => (
+                                    <div className='p-2 mt-1 d-flex flex-row justify-content-between' key={i} style={{
+                                        border: '1px solid #4D5154',
+                                        borderRadius: 'var(--bs-border-radius)'
+                                    }}>
+                                        <div style={{ maxWidth: '90%', textOverflow: 'ellipsis', overflow: 'hidden'}}>{item}</div>
+                                        <Icon className='bi bi-x float-end' onClick={() => onDelete(i)} hoverColor='orangered'/>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </Modal.Body>
@@ -425,7 +425,10 @@ const Dashboard: React.FC = () => {
                     <div className='d-flex flex-column' style={{width: '35%'}}>
                         <div className='d-flex justify-content-between'>
                             <Button variant='outline-danger' onClick={reset}>Cancel</Button>
-                            <Button variant='outline-primary' onClick={addRental}>Confirm</Button>
+                            <Button variant='outline-primary' onClick={async () => {
+                                await addRental();
+                                setRentalList([]);
+                            }}>Confirm</Button>
                         </div>
                         <div className='mt-2'>
                             {error && <p className='m-0' style={{color: 'red'}}>Error: {error}</p>}

@@ -207,11 +207,11 @@ def add():
             return jsonify({'error': 'No body'}), 400
 
         db_name = get_jwt_identity()
-        if 'rental' not in body:
-            return jsonify({'error': 'Missing rental parameter'}), 400
+        if 'rentals' not in body:
+            return jsonify({'error': 'Missing rentals parameter'}), 400
 
         try:
-            add_rental(db_name, body['rental'].split('\n'))
+            add_rental(db_name, body['rentals'])
         except sqlite3.IntegrityError as e:
             if 'UNIQUE constraint failed' in str(e):
                 return jsonify({'error': f'Duplicate key'}), 400
