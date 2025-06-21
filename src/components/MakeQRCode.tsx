@@ -9,7 +9,7 @@ interface QRItem {
     label: string;
 }
 
-const MakeStudent: React.FC = () => {
+const MakeQRCode: React.FC = () => {
     const [rawString, setRawString] = useState<string>('');
     const [b64encode, setB64encode] = useState<boolean>(true);
     const [dataList, setDataList] = useState<Array<string>>([]);
@@ -95,4 +95,4 @@ const MakeStudent: React.FC = () => {
     )
 };
 
-export default MakeStudent;
+export default MakeQRCode;

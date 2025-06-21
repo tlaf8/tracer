@@ -5,7 +5,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import ScanPage from './components/ScanPage';
 import LinkPage from './components/LinkPage';
 import Dashboard from './components/Dashboard';
-import MakeStudent from './components/MakeStudent'
+import MakeQRCode from './components/MakeQRCode.tsx'
 
 
 const App: React.FC = () => {
@@ -43,7 +43,7 @@ const App: React.FC = () => {
                 <Route path='/' element={<ScanPage/>}/>
                 <Route path='/link' element={<LinkPage/>}/>
                 <Route path='/dashboard' element={<Dashboard/>}/>
-                <Route path='/make' element={<MakeStudent />} />
+                <Route path='/make' element={<MakeQRCode />} />
             </Routes>
         </>
     );
