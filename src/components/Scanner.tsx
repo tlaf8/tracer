@@ -8,18 +8,18 @@ interface ScannerProps {
     setStatus: (status: boolean) => void;
 }
 
-const Scanner: React.FC<ScannerProps> = ({ onScan, onError, setStatus }) => {
+const Scanner: React.FC<ScannerProps> = ({ onScan, onError, setStatus }: ScannerProps) => {
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const qrScannerRef = useRef<QrScanner | null>(null);
-    const [isScanning, setIsScanning] = useState(false);
+    const [isScanning, setIsScanning] = useState<boolean>(false);
 
-    useEffect(() => {
-        return () => {
+    useEffect((): () => void => {       // lol
+        return (): void => {
             qrScannerRef.current?.stop();
         };
     }, []);
 
-    const startScanner = () => {
+    const startScanner = (): void => {
         if (!videoRef.current) return;
 
         qrScannerRef.current?.stop();
@@ -33,10 +33,10 @@ const Scanner: React.FC<ScannerProps> = ({ onScan, onError, setStatus }) => {
             }
         );
 
-        setTimeout(() => {
-            requestAnimationFrame(() => {
+        setTimeout((): void => {
+            requestAnimationFrame((): void => {
                 qrScannerRef.current?.start()
-                    .then(() => {
+                    .then((): void => {
                         setIsScanning(true);
                         setStatus(true);
                     })
@@ -48,7 +48,7 @@ const Scanner: React.FC<ScannerProps> = ({ onScan, onError, setStatus }) => {
         }, 200);
     };
 
-    const stopScanner = () => {
+    const stopScanner = (): void => {
         qrScannerRef.current?.stop();
         qrScannerRef.current?.destroy();
         setIsScanning(false);

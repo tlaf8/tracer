@@ -9,7 +9,7 @@ const LinkPage: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
 
-    const handleConnect = async () => {
+    const handleConnect = async (): Promise<void> => {
         try {
             const response = await axios.post(`http://localhost:9998/api/link`, {
                 method: 'POST',
@@ -27,7 +27,7 @@ const LinkPage: React.FC = () => {
             localStorage.setItem('token', response.data.token);
             setKey('');
             setStatus('Connected successfully! You will be redirected back shortly');
-            setTimeout(() => {
+            setTimeout((): void => {
                 navigate('/');
                 setStatus(null);
                 setError(null);
@@ -50,7 +50,7 @@ const LinkPage: React.FC = () => {
                 <Row className='mt-5 w-75'>
                     <form onSubmit={async (e) => {
                         e.preventDefault();
-                        setStatus(() => 'Connecting...');
+                        setStatus('Connecting...');
                         setError(null);
                         await handleConnect();
                     }}>

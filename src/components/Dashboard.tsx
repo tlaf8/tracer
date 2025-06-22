@@ -13,7 +13,7 @@ interface Status {
     status: string;
 }
 
-const splitIntoParts = (str: string) => {
+const splitIntoParts = (str: string): (string | number)[] => {
     const parts: (string | number)[] = [];
     let current = '';
 
@@ -38,7 +38,7 @@ const splitIntoParts = (str: string) => {
     return parts;
 }
 
-function naturalCompare(a: string, b: string): number {
+const naturalCompare = (a: string, b: string): number => {
     const aParts = splitIntoParts(a);
     const bParts = splitIntoParts(b);
 
@@ -76,14 +76,157 @@ const Dashboard: React.FC = () => {
     const [rawString, setRawString] = useState<string>('');
     const [rentalList, setRentalList] = useState<Array<string>>([]);
 
-    const reset = () => {
+    const reset = (): void => {
         setError('');
         setFetchingRentals(false);
         setFetchingLogs(false);
         setRentalModalOpen(false);
     };
 
-    const fetchDataCallback = useCallback(async () => {
+    const addRental = async (): Promise<void> => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            setError('No authentication token found. Please link this rental.');
+            return;
+        }
+
+        if (rentalList.length === 0) {
+            setError('Name required');
+            return;
+        }
+
+        try {
+            await axios.post(`http://localhost:9998/api/rentals/add`, {
+                body: {
+                    rentals: rentalList,
+                }
+            }, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            reset();
+            await fetchDataCallback();
+        } catch (err) {
+            if (isAxiosError(err)) {
+                if (err.response?.status === 400) {
+                    setError(err.response?.data.error);
+                }
+            } else {
+                setError('Something went wrong, check console for details.');
+                console.error(err);
+            }
+        }
+    };
+
+    const removeRental = async (rental: string): Promise<void> => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            setError('No authentication token found. Please link this rental.');
+            return;
+        }
+
+        try {
+            const response = await axios.post('http://localhost:9998/api/rentals/remove', {
+                body: {
+                    rental: rental
+                }
+            }, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+
+            console.log(response);
+            await fetchDataCallback();
+        } catch (err) {
+            if (isAxiosError(err)) {
+                if (err.response?.status === 404) {
+                    setError(err.response?.data.error);
+                }
+            } else {
+                setError('Something went wrong, check console for details.');
+                console.error(err);
+            }
+        }
+    }
+
+    const exportCsv = async (): Promise<void> => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            setError('No authentication token found. Please link this rental.');
+            return;
+        }
+
+        try {
+            const response = await axios.get('http://localhost:9998/api/export', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                },
+                responseType: 'json'
+            });
+
+            if (!response.data || !response.data.csv) {
+                setError('No data to export');
+                return;
+            }
+
+            const filename = response.data?.headers?.['Content-Disposition']?.split('filename=')[1]?.replace(/'/g, '') || 'logs.csv';
+            const blob = new Blob([response.data.csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            // link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            setClearModalOpen(true);
+        } catch (err) {
+            setError('Cannot export data to CSV. Please try again.');
+            console.error('Export error:', err);
+        }
+    };
+
+    const clearLogs = async (): Promise<void> => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            setError('No authentication token found. Please link this rental.');
+        }
+
+        try {
+            await axios.get('http://localhost:9998/api/clear', {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            setClearModalOpen(false);
+        } catch (err) {
+            if (isAxiosError(err)) {
+                if (err.response?.status === 400) {
+                    setError(err.response?.data.error);
+                }
+            } else {
+                setError('Something went wrong, check console for details.');
+                console.error(err);
+            }
+        }
+    };
+
+    const onDelete = (index: number): void => {
+        const newList = [...rentalList];
+        newList.splice(index, 1);
+        setRentalList(newList);
+   }
+
+    const fetchDataCallback = useCallback(async (): Promise<void> => {
         setFetchingRentals(true);
         setFetchingLogs(true);
         setError('');
@@ -133,150 +276,7 @@ const Dashboard: React.FC = () => {
         }
     }, []);
 
-    const addRental = async () => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            setError('No authentication token found. Please link this rental.');
-            return;
-        }
-
-        if (rentalList.length === 0) {
-            setError('Name required');
-            return;
-        }
-
-        try {
-            await axios.post(`http://localhost:9998/api/rentals/add`, {
-                body: {
-                    rentals: rentalList,
-                }
-            }, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            reset();
-            await fetchDataCallback();
-        } catch (err) {
-            if (isAxiosError(err)) {
-                if (err.response?.status === 400) {
-                    setError(err.response?.data.error);
-                }
-            } else {
-                setError('Something went wrong, check console for details.');
-                console.error(err);
-            }
-        }
-    };
-
-    const removeRental = async (rental: string) => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            setError('No authentication token found. Please link this rental.');
-            return;
-        }
-
-        try {
-            const response = await axios.post('http://localhost:9998/api/rentals/remove', {
-                body: {
-                    rental: rental
-                }
-            }, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            })
-
-            console.log(response);
-            await fetchDataCallback();
-        } catch (err) {
-            if (isAxiosError(err)) {
-                if (err.response?.status === 404) {
-                    setError(err.response?.data.error);
-                }
-            } else {
-                setError('Something went wrong, check console for details.');
-                console.error(err);
-            }
-        }
-    }
-
-    const exportCsv = async () => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            setError('No authentication token found. Please link this rental.');
-            return;
-        }
-
-        try {
-            const response = await axios.get('http://localhost:9998/api/export', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
-                },
-                responseType: 'json'
-            });
-
-            if (!response.data || !response.data.csv) {
-                setError('No data to export');
-                return;
-            }
-
-            const filename = response.data?.headers?.['Content-Disposition']?.split('filename=')[1]?.replace(/'/g, '') || 'logs.csv';
-            const blob = new Blob([response.data.csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-
-            link.href = url;
-            link.download = filename;
-            document.body.appendChild(link);
-            // link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
-            setClearModalOpen(true);
-        } catch (err) {
-            setError('Cannot export data to CSV. Please try again.');
-            console.error('Export error:', err);
-        }
-    };
-
-    const clearLogs = async () => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            setError('No authentication token found. Please link this rental.');
-        }
-
-        try {
-            await axios.get('http://localhost:9998/api/clear', {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            setClearModalOpen(false);
-        } catch (err) {
-            if (isAxiosError(err)) {
-                if (err.response?.status === 400) {
-                    setError(err.response?.data.error);
-                }
-            } else {
-                setError('Something went wrong, check console for details.');
-                console.error(err);
-            }
-        }
-    };
-
-    const onDelete = (index: number) => {
-        const newList = [...rentalList];
-        newList.splice(index, 1);
-        setRentalList(newList);
-   }
-
-    useEffect(() => {
+    useEffect((): void => {
         fetchDataCallback().catch(err => {
             setError('Failed fetching data. Check console for details');
             console.error(err);
@@ -292,7 +292,7 @@ const Dashboard: React.FC = () => {
                         <h4 className='text-white'>Logs
                             <Icon className='bi-arrow-clockwise float-end' onClick={fetchDataCallback}/>
                             <Icon className='bi bi-file-earmark-arrow-down me-2 float-end'
-                                  onClick={() => exportCsv()}/>
+                                  onClick={(): Promise<void> => exportCsv()}/>
                             {fetchingLogs && <div className='spinner-border spinner-border-sm float-end me-2 mt-1'
                                                   role='status'></div>}
                         </h4>
@@ -332,7 +332,7 @@ const Dashboard: React.FC = () => {
                 <Row>
                     <Col>
                         <h4 className='text-white'>Rentals
-                            <Icon className='bi-plus float-end' onClick={() => setRentalModalOpen(true)}/>
+                            <Icon className='bi-plus float-end' onClick={(): void => setRentalModalOpen(true)}/>
                             {fetchingRentals && <div className='spinner-border spinner-border-sm float-end me-2 mt-1'
                                                      role='status'></div>}
                         </h4>
@@ -358,8 +358,8 @@ const Dashboard: React.FC = () => {
                             </Table>
                         </div>
                         <div className='float-end mt-2'
-                             onMouseEnter={() => setHoveringStudent(true)}
-                             onMouseLeave={() => setHoveringStudent(false)}
+                             onMouseEnter={(): void => setHoveringStudent(true)}
+                             onMouseLeave={(): void => setHoveringStudent(false)}
                         >
                             <Link to='/make' style={{
                                 textDecoration: 'none',
@@ -381,7 +381,7 @@ const Dashboard: React.FC = () => {
                         alignItems: 'center'
                     }}>
                         New rental
-                        <Icon className='ms-3 bi bi-info-circle' onClick={() => setHelpModalOpen(true)}/>
+                        <Icon className='ms-3 bi bi-info-circle' onClick={(): void => setHelpModalOpen(true)}/>
                     </Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
@@ -414,7 +414,7 @@ const Dashboard: React.FC = () => {
                                         borderRadius: 'var(--bs-border-radius)'
                                     }}>
                                         <div style={{ maxWidth: '90%', textOverflow: 'ellipsis', overflow: 'hidden'}}>{item}</div>
-                                        <Icon className='bi bi-x float-end' onClick={() => onDelete(i)} hoverColor='orangered'/>
+                                        <Icon className='bi bi-x float-end' onClick={(): void => onDelete(i)} hoverColor='orangered'/>
                                     </div>
                                 ))}
                             </div>
@@ -425,7 +425,7 @@ const Dashboard: React.FC = () => {
                     <div className='d-flex flex-column' style={{width: '35%'}}>
                         <div className='d-flex justify-content-between'>
                             <Button variant='outline-danger' onClick={reset}>Cancel</Button>
-                            <Button variant='outline-primary' onClick={async () => {
+                            <Button variant='outline-primary' onClick={async (): Promise<void> => {
                                 await addRental();
                                 setRentalList([]);
                             }}>Confirm</Button>
@@ -437,13 +437,7 @@ const Dashboard: React.FC = () => {
                 </Modal.Footer>
             </Modal>
 
-            <Modal
-                size='sm'
-                show={helpModalOpen}
-                onHide={() => setHelpModalOpen(false)}
-                data-bs-theme='dark'
-                className='text-light'
-            >
+            <Modal size='sm' show={helpModalOpen} onHide={(): void => setHelpModalOpen(false)} data-bs-theme='dark' className='text-light'>
                 <Modal.Header closeButton>
                     <Modal.Title>
                         Help
@@ -466,13 +460,7 @@ const Dashboard: React.FC = () => {
                 </Modal.Body>
             </Modal>
 
-            <Modal
-                centered
-                show={clearModalOpen}
-                onHide={() => setClearModalOpen(false)}
-                data-bs-theme='dark'
-                className='text-light'
-            >
+            <Modal centered show={clearModalOpen} onHide={(): void => setClearModalOpen(false)} data-bs-theme='dark' className='text-light'>
                 <Modal.Header closeButton>
                     <Modal.Title>
                         Clear Logs
@@ -486,7 +474,7 @@ const Dashboard: React.FC = () => {
                 <Modal.Footer>
                     <div className='d-flex flex-column'>
                         <div className='d-flex justify-content-between'>
-                            <Button variant='outline-danger me-2' onClick={() => setClearModalOpen(false)}>No</Button>
+                            <Button variant='outline-danger me-2' onClick={(): void => setClearModalOpen(false)}>No</Button>
                             <Button variant='outline-primary' onClick={clearLogs}>Yes</Button>
                         </div>
                         <div className='mt-2'>

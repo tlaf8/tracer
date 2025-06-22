@@ -9,12 +9,12 @@ interface RentalProps {
     onDelete: (name: string) => void,
 }
 
-const Rental: React.FC<RentalProps> = ({ id, rental, status, renter, onDelete }) => {
+const Rental: React.FC<RentalProps> = ({ id, rental, status, renter, onDelete }: RentalProps) => {
     return (
         <tr key={id}>
             <td>
                 {rental}
-                <Icon className='ms-3 bi-x float-end' onClick={() => onDelete(rental)} hoverColor='orangered' />
+                <Icon className='ms-3 bi-x float-end' onClick={(): void => onDelete(rental)} hoverColor='orangered' />
             </td>
             <td>{status}</td>
             <td>{renter}</td>

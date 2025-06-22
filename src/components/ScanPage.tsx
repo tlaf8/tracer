@@ -17,12 +17,7 @@ const ScanPage: React.FC = () => {
     const [writing, setWriting] = useState<boolean>(false);
     const [error, setError] = useState<string>('');
 
-    // const mock = () => {
-    //     setRentalId('SF219-1');
-    //     setStudentName('Mock');
-    // }
-
-    const handleScan = (data: string) => {
+    const handleScan = (data: string): void => {
         if (b64Regex.test(data)) {
             setStudentName(Buffer.from(data, 'base64').toString());
         } else if (rentalRegex.test(data)) {
@@ -30,21 +25,21 @@ const ScanPage: React.FC = () => {
         }
     };
 
-    const handleError = (error: string | Error) => {
+    const handleError = (error: string | Error): void => {
         if (error !== 'No QR code found') {
             setError('Unknown error occurred with QR scanner. Check console for details');
             console.error(error);
         }
     };
 
-    const reset = () => {
+    const reset = (): void => {
         setWriting(false);
         setRentalId(null);
         setStudentName(null);
         setIsModalOpen(false);
     };
 
-    const handleSubmit = async () => {
+    const handleSubmit = async (): Promise<void> => {
         setWriting(true);
         setError('');
 
@@ -88,7 +83,7 @@ const ScanPage: React.FC = () => {
         reset();
     }
 
-    useEffect(() => {
+    useEffect((): void => {
         if (rentalId && studentName) {
             setIsModalOpen(true);
         }

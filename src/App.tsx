@@ -29,7 +29,7 @@ const App: React.FC = () => {
                                         <Link className='nav-link float-end' to='/link'>Link this device</Link>
                                     )
                                 ) : (
-                                    <p className='nav-link float-end mb-0' onClick={() => navigate(-1)} style={{
+                                    <p className='nav-link float-end mb-0' onClick={(): void | Promise<void> => navigate(-1)} style={{
                                         cursor: 'pointer'
                                     }}>Back</p>
                                 )}

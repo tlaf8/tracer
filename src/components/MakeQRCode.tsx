@@ -15,7 +15,7 @@ const MakeQRCode: React.FC = () => {
     const [dataList, setDataList] = useState<Array<string>>([]);
     const [qrData, setQrData] = useState<QRItem[]>([]);
 
-    const onDelete = (index: number) => {
+    const onDelete = (index: number): void => {
         const newList = [...dataList];
         const newQrData = [...qrData];
         newList.splice(index, 1);
@@ -65,7 +65,7 @@ const MakeQRCode: React.FC = () => {
                             </button>
                             <ul className='dropdown-menu dropdown-menu-end bg-dark'>
                                 <li>
-                                    <button className='dropdown-item bg-dark text-light' onClick={() => {
+                                    <button className='dropdown-item bg-dark text-light' onClick={(): void => {
                                         setB64encode(!b64encode);
                                     }}>{b64encode ? 'Device' : 'Student'}</button>
                                 </li>
@@ -79,7 +79,7 @@ const MakeQRCode: React.FC = () => {
                                 borderRadius: 'var(--bs-border-radius)'
                             }}>
                                 <div style={{ maxWidth: '90%', textOverflow: 'ellipsis', overflow: 'hidden'}}>{item}</div>
-                                <Icon className='bi bi-x float-end' onClick={() => onDelete(i)} hoverColor='orangered'/>
+                                <Icon className='bi bi-x float-end' onClick={(): void => onDelete(i)} hoverColor='orangered'/>
                             </div>
                         ))}
                     </div>

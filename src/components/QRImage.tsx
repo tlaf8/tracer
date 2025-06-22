@@ -6,7 +6,7 @@ interface QRImageProps {
     src: string,
 }
 
-const openInNewTab = (base64DataUrl: string) => {
+const openInNewTab = (base64DataUrl: string): void => {
     const base64 = base64DataUrl.split(',')[1];
     const byteCharacters = atob(base64);
     const byteNumbers = new Array(byteCharacters.length);
@@ -22,7 +22,7 @@ const openInNewTab = (base64DataUrl: string) => {
     window.open(blobUrl, '_blank');
 };
 
-const QRImage: React.FC<QRImageProps> = ({ key, src }) => {
+const QRImage: React.FC<QRImageProps> = ({ key, src }: QRImageProps) => {
     return (
         <div style={{
             border: '1px solid #4D5154',
@@ -32,7 +32,7 @@ const QRImage: React.FC<QRImageProps> = ({ key, src }) => {
                 <img key={key} src={src} alt={`QR ${key + 1}`} style={{
                     width: '150px',
                 }} />
-                <Icon className='bi bi-box-arrow-up-right mt-2 me-1' onClick={() => openInNewTab(src)}/>
+                <Icon className='bi bi-box-arrow-up-right mt-2 me-1' onClick={(): void => openInNewTab(src)}/>
             </div>
         </div>
     )

@@ -7,8 +7,8 @@ interface IconProps {
     hoverColor?: string,
 }
 
-const Icon: React.FC<IconProps> = ({ className, onClick, fontSize, hoverColor }) => {
-    const [hovering, setHovering] = useState(false);
+const Icon: React.FC<IconProps> = ({ className, onClick, fontSize, hoverColor }: IconProps) => {
+    const [hovering, setHovering] = useState<boolean>(false);
 
     return (
         <span className={className} style={{
@@ -17,8 +17,8 @@ const Icon: React.FC<IconProps> = ({ className, onClick, fontSize, hoverColor })
             fontSize: (fontSize ? fontSize : ''),
         }}
               onClick={onClick}
-              onMouseEnter={() => setHovering(true)}
-              onMouseLeave={() => setHovering(false)}>
+              onMouseEnter={(): void => setHovering(true)}
+              onMouseLeave={(): void => setHovering(false)}>
         </span>
     )
 }

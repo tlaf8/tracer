@@ -14,7 +14,7 @@ interface QRCodeGridProps {
     qrData: QRItem[];
 }
 
-const downloadQRCodesZip = async (qrData: QRItem[], qrImages: string[]) => {
+const downloadQRCodesZip = async (qrData: QRItem[], qrImages: string[]): Promise<void> => {
     if (!qrData || qrImages.length === 0) return;
 
     const zip = new JSZip();
@@ -29,10 +29,10 @@ const downloadQRCodesZip = async (qrData: QRItem[], qrImages: string[]) => {
 };
 
 
-const QRCodeGrid: React.FC<QRCodeGridProps> = ({qrData}) => {
+const QRCodeGrid: React.FC<QRCodeGridProps> = ({qrData}: QRCodeGridProps) => {
     const [qrImages, setQrImages] = useState<string[]>([]);
 
-    const generateQRCodes = useCallback(async () => {
+    const generateQRCodes = useCallback(async (): Promise<void> => {
         const images: string[] = [];
         const qrSize = 150;
         const fontSize = 11;
@@ -78,7 +78,7 @@ const QRCodeGrid: React.FC<QRCodeGridProps> = ({qrData}) => {
         setQrImages(images);
     }, [qrData])
 
-    useEffect(() => {
+    useEffect((): void => {
         if (qrData.length > 0) {
             generateQRCodes().catch((err) => {
                 console.error(err);
@@ -106,7 +106,7 @@ const QRCodeGrid: React.FC<QRCodeGridProps> = ({qrData}) => {
                 bottom: '25px',
                 right: '30px',
             }}>
-                <Icon className='bi bi-download' onClick={() => downloadQRCodesZip(qrData, qrImages)} fontSize='2rem' />
+                <Icon className='bi bi-download' onClick={(): Promise<void> => downloadQRCodesZip(qrData, qrImages)} fontSize='2rem' />
             </div>
         </div>
     );
