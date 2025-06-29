@@ -11,7 +11,7 @@ const LinkPage: React.FC = () => {
 
     const handleConnect = async (): Promise<void> => {
         try {
-            const response = await axios.post(`http://localhost:9998/api/link`, {
+            const response = await axios.post(`https://tracer.dedyn.io/api/link`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
