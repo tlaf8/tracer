@@ -96,7 +96,7 @@ const Dashboard: React.FC = () => {
         }
 
         try {
-            await axios.post(`http://localhost:9998/api/rentals/add`, {
+            await axios.post(`https://tracer.dedyn.io/api/rentals/add`, {
                 body: {
                     rentals: rentalList,
                 }
@@ -129,7 +129,7 @@ const Dashboard: React.FC = () => {
         }
 
         try {
-            const response = await axios.post('http://localhost:9998/api/rentals/remove', {
+            const response = await axios.post('https://tracer.dedyn.io/api/rentals/remove', {
                 body: {
                     rental: rental
                 }
@@ -162,7 +162,7 @@ const Dashboard: React.FC = () => {
         }
 
         try {
-            const response = await axios.get('http://localhost:9998/api/export', {
+            const response = await axios.get('https://tracer.dedyn.io/api/export', {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Accept': 'application/json'
@@ -200,7 +200,7 @@ const Dashboard: React.FC = () => {
         }
 
         try {
-            await axios.get('http://localhost:9998/api/clear', {
+            await axios.get('https://tracer.dedyn.io/api/clear', {
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
@@ -238,7 +238,7 @@ const Dashboard: React.FC = () => {
         }
 
         try {
-            const logsResponse = await axios.get(`http://localhost:9998/api/logs`, {
+            const logsResponse = await axios.get(`https://tracer.dedyn.io/api/logs`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -246,7 +246,7 @@ const Dashboard: React.FC = () => {
             setLogs(logsResponse.data.logs);
             setFetchingLogs(false);
 
-            const statusResponse = await axios.get(`http://localhost:9998/api/status`, {
+            const statusResponse = await axios.get(`https://tracer.dedyn.io/api/status`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
