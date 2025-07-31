@@ -89,7 +89,10 @@ const QRCodeGrid: React.FC<QRCodeGridProps> = ({qrData}: QRCodeGridProps) => {
     }, [generateQRCodes, qrData]);
 
     return (
-        <div style={{padding: '20px'}}>
+        <div className='overflow-auto scrollable-container' style={{
+            padding: '20px',
+            height: '85vh',
+        }}>
             <div
                 style={{
                     display: 'grid',
@@ -102,9 +105,12 @@ const QRCodeGrid: React.FC<QRCodeGridProps> = ({qrData}: QRCodeGridProps) => {
                     <QRImage src={src} key={index}/>
                 ))}
             </div>
-            <div className='position-absolute' style={{
+            <div className='bg-dark d-flex justify-content-center align-items-center rounded-pill position-absolute' style={{
                 bottom: '25px',
-                right: '30px',
+                right: '25px',
+                width: '75px',
+                height: '75px',
+                zIndex: '999'
             }}>
                 <Icon className='bi bi-download' onClick={(): Promise<void> => downloadQRCodesZip(qrData, qrImages)} fontSize='2rem' />
             </div>

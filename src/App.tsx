@@ -46,8 +46,8 @@ const App: React.FC = () => {
                 <Route path='/make' element={<MakeQRCode />} />
             </Routes>
 
-            <div className='footer text-center position-fixed w-100' style={{
-                fontSize: '1rem',
+            <div className='footer p-3 text-center position-fixed w-100' style={{
+                fontSize: '0.9rem',
                 bottom: '10px',
                 color: '#4D5154',
             }}>

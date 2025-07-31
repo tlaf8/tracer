@@ -86,7 +86,7 @@ const Dashboard: React.FC = () => {
     const addRental = async (): Promise<void> => {
         const token = localStorage.getItem('token');
         if (!token) {
-            setError('No authentication token found. Please link this rental.');
+            setError('No authentication token found. Please link this device.');
             return;
         }
 
@@ -124,7 +124,7 @@ const Dashboard: React.FC = () => {
     const removeRental = async (rental: string): Promise<void> => {
         const token = localStorage.getItem('token');
         if (!token) {
-            setError('No authentication token found. Please link this rental.');
+            setError('No authentication token found. Please link this device.');
             return;
         }
 
@@ -157,7 +157,7 @@ const Dashboard: React.FC = () => {
     const exportCsv = async (): Promise<void> => {
         const token = localStorage.getItem('token');
         if (!token) {
-            setError('No authentication token found. Please link this rental.');
+            setError('No authentication token found. Please link this device.');
             return;
         }
 
@@ -196,7 +196,7 @@ const Dashboard: React.FC = () => {
     const clearLogs = async (): Promise<void> => {
         const token = localStorage.getItem('token');
         if (!token) {
-            setError('No authentication token found. Please link this rental.');
+            setError('No authentication token found. Please link this device.');
         }
 
         try {
@@ -233,7 +233,7 @@ const Dashboard: React.FC = () => {
 
         const token = localStorage.getItem('token');
         if (!token) {
-            setError('No authentication token found. Please link this rental.');
+            setError('No authentication token found. Please link this device.');
             return;
         }
 

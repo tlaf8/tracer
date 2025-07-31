@@ -31,6 +31,7 @@ const MakeQRCode: React.FC = () => {
             }}>
                 <div style={{
                     width: '40vw',
+                    height: '80vh',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
@@ -72,11 +73,17 @@ const MakeQRCode: React.FC = () => {
                             </ul>
                         </div>
                     </div>
-                    <div className='w-75 mt-1 text-light'>
+                    <div className='d-flex flex-column w-80 mt-1 text-light overflow-auto scrollable-container'>
+                        {dataList.length > 0 &&
+                            <button className='btn btn-outline-secondary' style={{
+                                lineHeight: '10px',
+                            }} onClick={() => setDataList([])}>Clear</button>
+                        }
                         {dataList.map((item, i) => (
                             <div className='p-2 mt-1 d-flex flex-row justify-content-between' key={i} style={{
                                 border: '1px solid #4D5154',
-                                borderRadius: 'var(--bs-border-radius)'
+                                borderRadius: 'var(--bs-border-radius)',
+                                width: '30vw'
                             }}>
                                 <div style={{ maxWidth: '90%', textOverflow: 'ellipsis', overflow: 'hidden'}}>{item}</div>
                                 <Icon className='bi bi-x float-end' onClick={(): void => onDelete(i)} hoverColor='orangered'/>

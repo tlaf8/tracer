@@ -45,7 +45,7 @@ const ScanPage: React.FC = () => {
 
         const token = localStorage.getItem('token');
         if (!token) {
-            setError('No token found. Please link this rental');
+            setError('No token found. Please link this device');
             return;
         }
 
