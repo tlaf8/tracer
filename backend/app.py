@@ -1,12 +1,13 @@
-import csv
 import json
 import sqlite3
+import csv
 from base64 import b64decode
 from datetime import timedelta
 from os.path import exists
 from io import StringIO
+
+from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
-from flask import Flask, request, jsonify
 from flask_jwt_extended import JWTManager, get_jwt_identity, create_access_token, jwt_required
 
 
@@ -20,9 +21,10 @@ jwt = JWTManager(app)
 
 CORS(app, resources={r'/*': {
     'origins': [
-        'http://localhost:9998',
+        'https://tracer.dedyn.io',
         'http://localhost:5173',
-        'http://192.168.1.87:5173'
+        'http://192.168.1.87:5173',
+	'http://10.0.0.131:5173'
     ],
     'methods': ['GET', 'POST', 'OPTIONS'],
     'allow_headers': ['Content-Type', 'Authorization']
@@ -76,7 +78,7 @@ def write_entry(db_name, rental, student, date, time):
 
     try:
         cursor.execute('''
-            SELECT status, renter FROM status WHERE rental = ?
+            SELECT status FROM status WHERE rental = ?
         ''', (rental,))
 
         rental_status = cursor.fetchone()
@@ -90,15 +92,9 @@ def write_entry(db_name, rental, student, date, time):
         ''', (rental, flip[rental_status[0]], b64decode(student).decode('utf-8'), date, time))
         conn.commit()
 
-        new_status = flip[rental_status[0]]
         cursor.execute(f'''
-            UPDATE status SET status = ?, renter = ? WHERE rental = ?
-        ''', (
-            new_status,
-            b64decode(student).decode('utf-8') if new_status == 'OUT' else '',
-            rental
-        ))
-
+            UPDATE status SET status = ? WHERE rental = ?
+        ''', (flip[rental_status[0]], rental))
         conn.commit()
         conn.close()
 
@@ -207,11 +203,11 @@ def add():
             return jsonify({'error': 'No body'}), 400
 
         db_name = get_jwt_identity()
-        if 'rentals' not in body:
-            return jsonify({'error': 'Missing rentals parameter'}), 400
+        if 'rental' not in body:
+            return jsonify({'error': 'Missing rental parameter'}), 400
 
         try:
-            add_rental(db_name, body['rentals'])
+            add_rental(db_name, body['rental'].split('\n'))
         except sqlite3.IntegrityError as e:
             if 'UNIQUE constraint failed' in str(e):
                 return jsonify({'error': f'Duplicate key'}), 400
@@ -303,14 +299,11 @@ def export_logs():
         writer.writerows(data)
 
         output.seek(0)
-
-        return jsonify({
-            'csv': output.getvalue(),
-            'mimetype': 'text/csv',
-            'headers': {
-                'Content-Disposition': f'attachment;filename={db_name}_logs.csv'
-            }
-        })
+        return Response(
+            output.getvalue(),
+            mimetype='text/csv',
+            headers={"Content-Disposition": f"attachment;filename={db_name}_logs.csv"}
+        )
 
     except (Exception,) as e:
         return jsonify({'error': f'Failed to export logs: {str(e)}'}), 500
