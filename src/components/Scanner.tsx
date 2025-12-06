@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import QrScanner from 'qr-scanner';
 
@@ -13,16 +13,11 @@ const Scanner: React.FC<ScannerProps> = ({ onScan, onError, setStatus }: Scanner
     const qrScannerRef = useRef<QrScanner | null>(null);
     const [isScanning, setIsScanning] = useState<boolean>(false);
 
-    useEffect((): () => void => {       // lol
-        return (): void => {
-            qrScannerRef.current?.stop();
-        };
-    }, []);
-
     const startScanner = (): void => {
-        if (!videoRef.current) return;
-
-        qrScannerRef.current?.stop();
+        if (isScanning || !videoRef.current) return;
+        
+        stopScanner();
+        
         qrScannerRef.current = new QrScanner(
             videoRef.current,
             result => onScan(result.data),
@@ -34,26 +29,30 @@ const Scanner: React.FC<ScannerProps> = ({ onScan, onError, setStatus }: Scanner
         );
 
         setTimeout((): void => {
-            requestAnimationFrame((): void => {
-                qrScannerRef.current?.start()
-                    .then((): void => {
-                        setIsScanning(true);
-                        setStatus(true);
-                    })
-                    .catch(error => {
-                        console.error(error);
-                        onError(error);
-                    })
-            });
-        }, 200);
+            requestAnimationFrame(async (): Promise<void> => {
+                try {
+                    await qrScannerRef.current?.start();
+                    setIsScanning(true);
+                    setStatus(true);
+                } catch (error) {
+                    console.error(error);
+                    onError(error as Error | string);
+                }
+            })
+        }, 200)
     };
 
-    const stopScanner = (): void => {
+    const stopScanner = useCallback((): void => {
         qrScannerRef.current?.stop();
         qrScannerRef.current?.destroy();
+        qrScannerRef.current = null;
         setIsScanning(false);
         setStatus(false);
-    };
+    }, [setIsScanning, setStatus]);
+
+    useEffect((): void | (() => void) => {
+        return (): void => stopScanner();
+    }, [stopScanner]);
 
     return (
         <div className='d-flex flex-column align-items-center justify-content-center'>
@@ -76,7 +75,7 @@ const Scanner: React.FC<ScannerProps> = ({ onScan, onError, setStatus }: Scanner
                     transition={{duration: 1, ease: 'circInOut'}}
                 >Stop Camera</motion.button>
             )}
-            <video ref={videoRef} className='w-100 h-100 rounded' />
+            <video ref={videoRef} className='w-75 h-auto rounded' />
         </div>
     );
 }

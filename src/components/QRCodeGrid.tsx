@@ -102,7 +102,7 @@ const QRCodeGrid: React.FC<QRCodeGridProps> = ({qrData}: QRCodeGridProps) => {
                 }}
             >
                 {qrImages.map((src, index) => (
-                    <QRImage src={src} key={index}/>
+                    <QRImage src={src} index={index} key={index}/>
                 ))}
             </div>
             <div className='bg-dark d-flex justify-content-center align-items-center rounded-pill position-absolute' style={{

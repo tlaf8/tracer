@@ -16,18 +16,14 @@ const MakeQRCode: React.FC = () => {
     const [qrData, setQrData] = useState<QRItem[]>([]);
 
     const onDelete = (index: number): void => {
-        const newList = [...dataList];
-        const newQrData = [...qrData];
-        newList.splice(index, 1);
-        newQrData.splice(index, 1);
-        setDataList(newList);
-        setQrData(newQrData);
+        setDataList(prev => prev.filter((_, i) => i !== index));
+        setQrData(prev => prev.filter((_, i) => i !== index));
     }
 
     return (
         <>
             <div className='d-flex flex-row' style={{
-                height: 'calc(100vh - 56px)'
+                height: 'calc(100vh - 110px)'
             }}>
                 <div style={{
                     width: '40vw',
@@ -46,41 +42,48 @@ const MakeQRCode: React.FC = () => {
                                 className='form-control bg-dark text-light border-secondary'
                                 value={rawString}
                                 onChange={(e) => {
-                                    setRawString(e.target.value);
+                                    setRawString(e.target.value.trimStart());
                                 }}
-                                onKeyDown={(k) => {
+                                onKeyDown={(e) => {
+                                    if (e.key !== 'Enter') return;
                                     const trimmed = rawString.trim();
-                                    if (k.key === 'Enter' && trimmed !== '') {
-                                        setDataList([...dataList, trimmed]);
-                                        setQrData([...qrData, {
-                                            data: b64encode ? Buffer.from(trimmed).toString('base64') : trimmed,
-                                            encoding: b64encode,
-                                            label: trimmed
-                                        }])
-                                        setRawString('');
-                                    }
+                                    if (!trimmed) return;
+
+                                    const entry = b64encode ? Buffer.from(trimmed).toString('base64') : trimmed;
+
+                                    setDataList(prev => [...prev, trimmed]);
+                                    setQrData(prev => [...prev, {
+                                        data: entry,
+                                        encoding: b64encode,
+                                        label: trimmed
+                                    }]);
+                                    setRawString('');
+                                }}
+                                style={{
+                                    width: '65%'
                                 }}
                             ></input>
-                            <button className='btn btn-outline-secondary dropdown-toggle' type='button'
-                                    data-bs-toggle='dropdown' aria-expanded='false'>{b64encode ? 'Student' : 'Device'}
-                            </button>
-                            <ul className='dropdown-menu dropdown-menu-end bg-dark'>
-                                <li>
-                                    <button className='dropdown-item bg-dark text-light' onClick={(): void => {
-                                        setB64encode(!b64encode);
-                                    }}>{b64encode ? 'Device' : 'Student'}</button>
-                                </li>
-                            </ul>
+                            <select
+                                className="form-select bg-dark text-light border-secondary w-auto"
+                                value={b64encode ? "student" : "device"}
+                                onChange={(e) => setB64encode(e.target.value === "student")}
+                            >
+                                <option value="student">Student</option>
+                                <option value="device">Device</option>
+                            </select>
                         </div>
                     </div>
                     <div className='d-flex flex-column w-80 mt-1 text-light overflow-auto scrollable-container'>
                         {dataList.length > 0 &&
                             <button className='btn btn-outline-secondary' style={{
                                 lineHeight: '10px',
-                            }} onClick={() => setDataList([])}>Clear</button>
+                            }} onClick={() => {
+                                setDataList([]);
+                                setQrData([]);
+                            }}>Clear</button>
                         }
                         {dataList.map((item, i) => (
-                            <div className='p-2 mt-1 d-flex flex-row justify-content-between' key={i} style={{
+                            <div className='p-2 mt-1 d-flex flex-row justify-content-between' key={item} style={{
                                 border: '1px solid #4D5154',
                                 borderRadius: 'var(--bs-border-radius)',
                                 width: '30vw'

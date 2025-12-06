@@ -1,10 +1,10 @@
 import React, {useCallback, useEffect, useState} from 'react';
 import axios, {isAxiosError} from 'axios';
 import {Button, Col, Container, Modal, Row, Table} from 'react-bootstrap';
-import 'bootstrap/dist/css/bootstrap.min.css';
 import Rental from './Rental';
 import {Link} from 'react-router-dom';
 import Icon from './Icon';
+import urlConfig from '../urlConfig.json'
 
 interface Status {
     id: number;
@@ -91,21 +91,20 @@ const Dashboard: React.FC = () => {
         }
 
         if (rentalList.length === 0) {
-            setError('Name required');
+            setError('No rentals entered.');
             return;
         }
 
         try {
-            await axios.post(`https://tracer.dedyn.io/api/rentals/add`, {
-                body: {
-                    rentals: rentalList,
+            await axios.post(`${urlConfig.baseUrl}/api/rentals/add`,
+                { rentals: rentalList },
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
                 }
-            }, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+            );
 
             reset();
             await fetchDataCallback();
@@ -129,16 +128,16 @@ const Dashboard: React.FC = () => {
         }
 
         try {
-            const response = await axios.post('https://tracer.dedyn.io/api/rentals/remove', {
-                body: {
-                    rental: rental
+            const response = await axios.post(
+                `${urlConfig.baseUrl}/api/rentals/remove`,
+                { rental: rental },
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
                 }
-            }, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            })
+            );
 
             console.log(response);
             await fetchDataCallback();
@@ -162,7 +161,7 @@ const Dashboard: React.FC = () => {
         }
 
         try {
-            const response = await axios.get('https://tracer.dedyn.io/api/export', {
+            const response = await axios.get(`${urlConfig.baseUrl}/api/export`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Accept': 'application/json'
@@ -200,7 +199,7 @@ const Dashboard: React.FC = () => {
         }
 
         try {
-            await axios.get('https://tracer.dedyn.io/api/clear', {
+            await axios.get(`${urlConfig.baseUrl}/api/clear`, {
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
@@ -238,7 +237,7 @@ const Dashboard: React.FC = () => {
         }
 
         try {
-            const logsResponse = await axios.get(`https://tracer.dedyn.io/api/logs`, {
+            const logsResponse = await axios.get(`${urlConfig.baseUrl}/api/logs`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -246,7 +245,7 @@ const Dashboard: React.FC = () => {
             setLogs(logsResponse.data.logs);
             setFetchingLogs(false);
 
-            const statusResponse = await axios.get(`https://tracer.dedyn.io/api/status`, {
+            const statusResponse = await axios.get(`${urlConfig.baseUrl}/api/status`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -351,7 +350,7 @@ const Dashboard: React.FC = () => {
                                 </thead>
                                 <tbody>
                                 {status.map(stat => (
-                                    <Rental id={stat.id} rental={stat.rental} status={stat.status} renter={stat.renter}
+                                    <Rental rental={stat.rental} status={stat.status} renter={stat.renter}
                                             onDelete={removeRental}/>
                                 ))}
                                 </tbody>
@@ -406,7 +405,6 @@ const Dashboard: React.FC = () => {
                             ></input>
                             <div className='mt-3' style={{
                                 maxHeight: '50vh',
-                                overflow: 'scroll',
                             }}>
                                 {rentalList.map((item, i) => (
                                     <div className='p-2 mt-1 d-flex flex-row justify-content-between' key={i} style={{

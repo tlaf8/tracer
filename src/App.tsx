@@ -1,37 +1,44 @@
-import React from 'react';
-import {Link, Route, Routes, useLocation, useNavigate} from 'react-router-dom';
-import 'bootstrap/dist/js/bootstrap.bundle.min.js';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import ScanPage from './components/ScanPage';
-import LinkPage from './components/LinkPage';
-import Dashboard from './components/Dashboard';
-import MakeQRCode from './components/MakeQRCode.tsx'
+import React, {useState} from 'react'
+import {Link, Route, Routes, useLocation, useNavigate} from 'react-router-dom'
+
+const ScanPage = React.lazy(() => import('./components/ScanPage'));
+const LinkPage = React.lazy(() => import('./components/LinkPage'));
+const Dashboard = React.lazy(() => import('./components/Dashboard'));
+const MakeQRCode = React.lazy(() => import('./components/MakeQRCode'));
 
 
 const App: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
+    const [token] = useState<string | null>((): string | null => localStorage.getItem('token'));
 
     return (
-        <>
-            <nav className='navbar navbar-expand navbar-dark bg-dark sticky-top'>
+        <div
+            style={{
+                minHeight: "100vh",
+                display: "flex",
+                flexDirection: "column",
+            }}
+        >
+            <nav className='navbar navbar-dark bg-dark sticky-top'>
                 <div className='container-fluid'>
                     <Link className='navbar-brand font-monospace' to='/'>tracer</Link>
-                    <div className='collapse navbar-collapse' id='navbarNav'>
+                    <div id='navbarNav'>
                         <ul className='navbar-nav ms-auto'>
-                            <li className='nav-item' style={{
-                                width: '10vw',
-                            }}>
+                            <li className='nav-item' style={{ width: '10vw' }}>
                                 {location.pathname === '/' ? (
-                                    localStorage.getItem('token') ? (
+                                    token ? (
                                         <Link className='nav-link float-end' to='/dashboard'>Dashboard</Link>
                                     ) : (
                                         <Link className='nav-link float-end' to='/link'>Link this device</Link>
                                     )
                                 ) : (
-                                    <p className='nav-link float-end mb-0' onClick={(): void | Promise<void> => navigate(-1)} style={{
-                                        cursor: 'pointer'
-                                    }}>Back</p>
+                                    <button
+                                        className="nav-link btn-secondary float-end"
+                                        onClick={() => navigate(-1)}
+                                    >
+                                        Back
+                                    </button>
                                 )}
                             </li>
                         </ul>
@@ -39,21 +46,33 @@ const App: React.FC = () => {
                 </div>
             </nav>
 
-            <Routes>
-                <Route path='/' element={<ScanPage/>}/>
-                <Route path='/link' element={<LinkPage/>}/>
-                <Route path='/dashboard' element={<Dashboard/>}/>
-                <Route path='/make' element={<MakeQRCode />} />
-            </Routes>
+            <div className='flex-grow-1'>
+                <React.Suspense fallback={
+                    <div className="text-center mt-5">
+                        Loading...
+                    </div>
+                }>
+                    <Routes>
+                        <Route path='/' element={<ScanPage/>}/>
+                        <Route path='/link' element={<LinkPage/>}/>
+                        <Route path='/dashboard' element={<Dashboard/>}/>
+                        <Route path='/make' element={<MakeQRCode/>}/>
+                    </Routes>
+                </React.Suspense>
+            </div>
 
-            <div className='footer p-3 text-center position-fixed w-100' style={{
-                fontSize: '0.9rem',
-                bottom: '10px',
-                color: '#4D5154',
-            }}>
+            <div
+                style={{
+                    fontSize: '0.9rem',
+                    color: '#4D5154',
+                    textAlign: 'center',
+                    padding: '1rem',
+                    marginTop: 'auto',
+                }}
+            >
                 © 2025 github/tlaf8
             </div>
-        </>
+        </div>
     );
 }
 

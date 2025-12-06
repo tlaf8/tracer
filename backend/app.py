@@ -1,353 +1,418 @@
 import csv
 import json
+import re
 import sqlite3
 from base64 import b64decode
 from datetime import timedelta
-from os.path import exists
 from io import StringIO
+from os import makedirs
+from os.path import join, exists
+
+from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
-from flask import Flask, request, jsonify
-from flask_jwt_extended import JWTManager, get_jwt_identity, create_access_token, jwt_required
+from flask_jwt_extended import (
+    JWTManager,
+    get_jwt_identity,
+    create_access_token,
+    jwt_required,
+)
+
+DB_DIR = "db"
+VALID_KEYS_DB = join(DB_DIR, "valid_keys.db")
 
 
 class RentalNotFoundException(Exception):
     pass
 
 
+class InvalidStudentEncoding(Exception):
+    pass
+
+
+class InvalidDatabaseName(Exception):
+    pass
+
+
 app = Flask(__name__)
-app.config['JWT_SECRET_KEY'] = 'secret'
+app.config["JWT_SECRET_KEY"] = "secret"  # TODO: move to env var in production
 jwt = JWTManager(app)
 
-CORS(app, resources={r'/*': {
-    'origins': [
-        'http://localhost:9998',
-        'http://localhost:5173',
-        'http://192.168.1.87:5173'
-    ],
-    'methods': ['GET', 'POST', 'OPTIONS'],
-    'allow_headers': ['Content-Type', 'Authorization']
-}})
+CORS(
+    app,
+    resources={
+        r"/*": {
+            "origins": [
+                "https://tracer.dedyn.io",
+                "http://localhost:5173",
+                "http://192.168.1.87:5173",
+                "http://10.0.0.131:5173",
+            ],
+            "methods": ["GET", "POST", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"],
+        }
+    },
+)
 
 
-def valid(key):
-    conn = sqlite3.connect('db/valid_keys.db')
-    cursor = conn.cursor()
-    cursor.execute('SELECT * FROM keys WHERE key = ?', (key,))
-    result = cursor.fetchone()
-    conn.close()
+def ensure_db_dir() -> None:
+    if not exists(DB_DIR):
+        makedirs(DB_DIR, exist_ok=True)
+
+
+def db_path_from_name(db_name: str) -> str:
+    """
+    Validate and convert a logical db_name (the key) into a safe SQLite file path.
+    Only allow alphanumerics, underscore, and dash.
+    """
+    if not re.match(r"^[A-Za-z0-9_-]+$", db_name):
+        raise InvalidDatabaseName("Invalid database name")
+    ensure_db_dir()
+    return join(DB_DIR, f"{db_name}.db")
+
+
+def valid(key: str) -> bool:
+    ensure_db_dir()
+    # valid_keys.db is assumed to exist up-front; you can create/populate it separately.
+    if not exists(VALID_KEYS_DB):
+        return False
+
+    with sqlite3.connect(VALID_KEYS_DB) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1 FROM keys WHERE key = ?", (key,))
+        result = cursor.fetchone()
     return bool(result)
 
 
-# TODO: Change this to check for table existence and create only if not found
-def ensure_table(db_name):
-    if not exists(f'db/{db_name}.db'):
-        open(f'db/{db_name}.db', 'x').close()
+def ensure_table(db_name: str) -> None:
+    """
+    Ensure logs/status tables exist for this key/db.
+    """
+    db_path = db_path_from_name(db_name)
+    with sqlite3.connect(db_path) as conn:
+        cursor = conn.cursor()
 
-    conn = sqlite3.connect(f'db/{db_name}.db')
-    cursor = conn.cursor()
-    cursor.execute(f'''
-        CREATE TABLE IF NOT EXISTS logs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            rental TEXT NOT NULL,
-            action TEXT NOT NULL,
-            student TEXT NOT NULL,
-            date TEXT NOT NULL,
-            time TEXT NOT NULL
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS logs (
+                                                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                                rental TEXT NOT NULL,
+                                                action TEXT NOT NULL,
+                                                student TEXT NOT NULL,
+                                                date TEXT NOT NULL,
+                                                time TEXT NOT NULL
+            )
+            """
         )
-    ''')
-    conn.commit()
-    cursor.execute(f'''
-        CREATE TABLE IF NOT EXISTS status (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            rental TEXT UNIQUE NOT NULL,
-            status TEXT NOT NULL
+
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS status (
+                                                  id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                                  rental TEXT UNIQUE NOT NULL,
+                                                  status TEXT NOT NULL
+            )
+            """
         )
-    ''')
 
-    conn.commit()
-    conn.close()
+        conn.commit()
 
 
-def write_entry(db_name, rental, student, date, time):
-    flip = {'IN': 'OUT', 'OUT': 'IN'}
-    ensure_table(db_name)
-    conn = sqlite3.connect(f'db/{db_name}.db')
-    cursor = conn.cursor()
-
+def decode_student(student_b64: str) -> str:
     try:
-        cursor.execute('''
-            SELECT status, renter FROM status WHERE rental = ?
-        ''', (rental,))
+        return b64decode(student_b64).decode("utf-8")
+    except Exception:
+        raise InvalidStudentEncoding("Invalid base64-encoded student value")
 
-        rental_status = cursor.fetchone()
-        if rental_status is None:
-            conn.close()
-            raise RentalNotFoundException('No rental found')
 
-        cursor.execute(f'''
-            INSERT INTO logs (rental, action, student, date, time) 
+def write_entry(db_name: str, rental: str, student_b64: str, date: str, time: str) -> None:
+    flip = {"IN": "OUT", "OUT": "IN"}
+    ensure_table(db_name)
+    db_path = db_path_from_name(db_name)
+
+    with sqlite3.connect(db_path) as conn:
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT status FROM status WHERE rental = ?", (rental,))
+        row = cursor.fetchone()
+        if row is None:
+            raise RentalNotFoundException("No rental found")
+
+        current_status = row[0]
+        if current_status not in flip:
+            raise ValueError(f"Invalid status for rental: {current_status}")
+
+        new_status = flip[current_status]
+        student = decode_student(student_b64)
+
+        cursor.execute(
+            """
+            INSERT INTO logs (rental, action, student, date, time)
             VALUES (?, ?, ?, ?, ?)
-        ''', (rental, flip[rental_status[0]], b64decode(student).decode('utf-8'), date, time))
+            """,
+            (rental, new_status, student, date, time),
+        )
+
+        cursor.execute(
+            """
+            UPDATE status SET status = ? WHERE rental = ?
+            """,
+            (new_status, rental),
+        )
+
         conn.commit()
 
-        new_status = flip[rental_status[0]]
-        cursor.execute(f'''
-            UPDATE status SET status = ?, renter = ? WHERE rental = ?
-        ''', (
-            new_status,
-            b64decode(student).decode('utf-8') if new_status == 'OUT' else '',
-            rental
-        ))
 
-        conn.commit()
-        conn.close()
-
-    except (Exception,):
-        conn.close()
-        raise
-
-    conn.close()
-
-
-def add_rental(db_name, rentals):
+def add_rental(db_name: str, rentals: list[str]) -> None:
     ensure_table(db_name)
-    conn = sqlite3.connect(f'db/{db_name}.db')
-    cursor = conn.cursor()
+    db_path = db_path_from_name(db_name)
 
-    try:
-        for rental in rentals:
-            cursor.execute('INSERT INTO status (rental, status) VALUES (?, ?)', (rental, 'IN',))
-            conn.commit()
+    cleaned = [r.strip() for r in rentals if r.strip()]
+    if not cleaned:
+        return
 
-        conn.close()
-
-    except (Exception,):
-        conn.close()
-        raise
-
-
-def remove_rental(db_name, rental):
-    ensure_table(db_name)
-    conn = sqlite3.connect(f'db/{db_name}.db')
-    cursor = conn.cursor()
-
-    try:
-        cursor.execute('DELETE FROM status WHERE rental = ?', (rental,))
+    with sqlite3.connect(db_path) as conn:
+        cursor = conn.cursor()
+        for rental in cleaned:
+            cursor.execute(
+                "INSERT INTO status (rental, status) VALUES (?, ?)",
+                (rental, "IN"),
+            )
         conn.commit()
-        conn.close()
-
-    except (Exception,):
-        conn.close()
-        raise
 
 
-@app.route('/api/link', methods=['POST'])
+def remove_rental(db_name: str, rental: str) -> None:
+    ensure_table(db_name)
+    db_path = db_path_from_name(db_name)
+
+    with sqlite3.connect(db_path) as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM status WHERE rental = ?", (rental,))
+        if cursor.rowcount == 0:
+            raise RentalNotFoundException("Rental not found")
+        conn.commit()
+
+
+@app.route("/api/link", methods=["POST"])
 def link():
     if not request.is_json:
-        return jsonify({'error': 'Request must be JSON'}), 400
+        return jsonify(error="Request must be JSON"), 400
 
     data = request.get_json()
-    body = data.get('body')
-    if isinstance(body, str):
-        try:
-            body = json.loads(body)
-        except json.JSONDecodeError:
-            return jsonify({'error': 'Invalid JSON in body'}), 400
+    key = data.get("key")
 
-    key = body.get('key')
-    if key is None or not valid(key):
-        return jsonify({'error': 'Invalid key'}), 400
+    if not key or not valid(key):
+        return jsonify(error="Invalid key"), 400
 
+    # Ensure DB/tables exist for this key
     ensure_table(key)
 
     expires = timedelta(days=365)
     token = create_access_token(identity=key, expires_delta=expires)
-    return jsonify({'token': token})
+    return jsonify(token=token), 200
 
 
-@app.route('/api/write', methods=['POST'])
+@app.route("/api/write", methods=["POST"])
 @jwt_required()
 def write_log():
+    if not request.is_json:
+        return jsonify(error="Expecting JSON"), 400
+
+    data = request.get_json()
+    db_name = get_jwt_identity()
+
+    required_fields = ["rental", "student", "date", "time"]
+    missing = [f for f in required_fields if f not in data]
+
+    if missing:
+        return jsonify(error=f"Missing fields: {', '.join(missing)}"), 400
+
     try:
-        if not request.is_json:
-            return jsonify({'error': 'Expecting json'}), 400
+        write_entry(
+            db_name,
+            data["rental"],
+            data["student"],
+            data["date"],
+            data["time"],
+        )
+        return jsonify(message="Log entry created successfully"), 201
 
-        data = request.get_json()
+    except RentalNotFoundException:
+        return jsonify(error="rental does not exist"), 404
 
-        body = data.get('body')
-        if body is None:
-            return jsonify({'error': 'No body'}), 400
+    except InvalidStudentEncoding:
+        return jsonify(error="Invalid student encoding"), 400
 
-        db_name = get_jwt_identity()
-
-        required_fields = ['rental', 'student', 'date', 'time']
-        if not all(key in body for key in required_fields):
-            return jsonify({'error': 'Missing body parameters'}), 400
-
-        write_entry(db_name, body['rental'], body['student'], body['date'], body['time'])
-        return jsonify({'message': 'Log entry created successfully'}), 201
-
-    except RentalNotFoundException as e:
-        return jsonify({'error': 'rental does not exist'}), 400
-
-    except (Exception,) as e:
-        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
-
-
-@app.route('/api/rentals/add', methods=['POST'])
-@jwt_required()
-def add():
-    try:
-        if not request.is_json:
-            return jsonify({'error': 'Expecting json'}), 400
-
-        data = request.get_json()
-        body = data.get('body')
-        if body is None:
-            return jsonify({'error': 'No body'}), 400
-
-        db_name = get_jwt_identity()
-        if 'rentals' not in body:
-            return jsonify({'error': 'Missing rentals parameter'}), 400
-
-        try:
-            add_rental(db_name, body['rentals'])
-        except sqlite3.IntegrityError as e:
-            if 'UNIQUE constraint failed' in str(e):
-                return jsonify({'error': f'Duplicate key'}), 400
-            else:
-                raise
-
-        return jsonify({'message': 'rental created successfully'}), 201
+    except InvalidDatabaseName:
+        return jsonify(error="Invalid database name"), 400
 
     except Exception as e:
-        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+        return jsonify(error=f"Unexpected error: {str(e)}"), 500
 
 
-@app.route('/api/rentals/remove', methods=['POST'])
+@app.route("/api/rentals/add", methods=["POST"])
+@jwt_required()
+def add():
+    if not request.is_json:
+        return jsonify(error="Expecting JSON"), 400
+
+    data = request.get_json()
+    db_name = get_jwt_identity()
+
+    rental_block = data.get("rentals")
+    if rental_block is None:
+        return jsonify(error="Missing rental parameter"), 400
+
+    rentals = data.get("rentals", [])
+
+    try:
+        add_rental(db_name, rentals)
+        return jsonify(message="Rental(s) created successfully"), 201
+
+    except sqlite3.IntegrityError as e:
+        if "UNIQUE constraint failed" in str(e):
+            return jsonify(error="Duplicate rental"), 400
+        return jsonify(error=f"Integrity error: {str(e)}"), 400
+    except InvalidDatabaseName:
+        return jsonify(error="Invalid database name"), 400
+    except Exception as e:
+        return jsonify(error=f"Unexpected error: {str(e)}"), 500
+
+
+@app.route("/api/rentals/remove", methods=["POST"])
 @jwt_required()
 def remove():
+    if not request.is_json:
+        return jsonify(error="Expecting JSON"), 400
+
+    data = request.get_json()
+    db_name = get_jwt_identity()
+
+    rental = data.get("rental")
+    if rental is None:
+        return jsonify(error="Missing rental parameter"), 400
+
     try:
-        if not request.is_json:
-            return jsonify({'error': 'Expecting json'}), 400
-
-        data = request.get_json()
-        body = data.get('body')
-        if body is None:
-            return jsonify({'error': 'No body'}), 400
-
-        db_name = get_jwt_identity()
-        if 'rental' not in body:
-            return jsonify({'error': 'Missing rental parameter'}), 400
-
-        remove_rental(db_name, body['rental'])
-
-        return jsonify({'message': 'ok'}), 200
-
-    except RentalNotFoundException as e:
-        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+        remove_rental(db_name, rental)
+        return jsonify(message="ok"), 200
+    except RentalNotFoundException:
+        return jsonify(error="Rental not found"), 404
+    except InvalidDatabaseName:
+        return jsonify(error="Invalid database name"), 400
+    except Exception as e:
+        return jsonify(error=f"Unexpected error: {str(e)}"), 500
 
 
-@app.route('/api/logs', methods=['GET'])
+@app.route("/api/logs", methods=["GET"])
 @jwt_required()
 def get_logs():
     try:
         db_name = get_jwt_identity()
-        conn = sqlite3.connect(f'db/{db_name}.db')
-        conn.text_factory = str
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM logs')
-        columns = [description[0] for description in cursor.description]
-        data = cursor.fetchall()
-        conn.close()
-        logs = [dict(zip(columns, row)) for row in data]
-        return jsonify({'logs': logs}), 200
-    except (Exception,) as e:
-        return jsonify({'error': f'Failed to fetch logs: {str(e)}'}), 500
+        db_path = db_path_from_name(db_name)
+
+        with sqlite3.connect(db_path) as conn:
+            conn.text_factory = str
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM logs")
+            columns = [desc[0] for desc in cursor.description]
+            rows = cursor.fetchall()
+
+        logs = [dict(zip(columns, row)) for row in rows]
+        return jsonify(logs=logs), 200
+
+    except InvalidDatabaseName:
+        return jsonify(error="Invalid database name"), 400
+    except Exception as e:
+        return jsonify(error=f"Failed to fetch logs: {str(e)}"), 500
 
 
-@app.route('/api/status', methods=['GET'])
+@app.route("/api/status", methods=["GET"])
 @jwt_required()
 def get_status():
     try:
         db_name = get_jwt_identity()
-        conn = sqlite3.connect(f'db/{db_name}.db')
-        conn.text_factory = str
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM status')
-        columns = [description[0] for description in cursor.description]
-        data = cursor.fetchall()
-        conn.close()
-        status = [dict(zip(columns, row)) for row in data]
-        return jsonify({'status': status}), 200
-    except (Exception,) as e:
-        return jsonify({'error': f'Failed to fetch status: {str(e)}'}), 500
+        db_path = db_path_from_name(db_name)
+
+        with sqlite3.connect(db_path) as conn:
+            conn.text_factory = str
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM status")
+            columns = [desc[0] for desc in cursor.description]
+            rows = cursor.fetchall()
+
+        status_list = [dict(zip(columns, row)) for row in rows]
+        return jsonify(status=status_list), 200
+
+    except InvalidDatabaseName:
+        return jsonify(error="Invalid database name"), 400
+    except Exception as e:
+        return jsonify(error=f"Failed to fetch status: {str(e)}"), 500
 
 
-@app.route('/api/export', methods=['GET'])
+@app.route("/api/export", methods=["GET"])
 @jwt_required()
 def export_logs():
     try:
         db_name = get_jwt_identity()
-        conn = sqlite3.connect(f'db/{db_name}.db')
-        conn.text_factory = str
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM logs')
-        columns = [description[0] for description in cursor.description]
-        data = cursor.fetchall()
-        conn.close()
+        db_path = db_path_from_name(db_name)
+
+        with sqlite3.connect(db_path) as conn:
+            conn.text_factory = str
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM logs")
+            columns = [desc[0] for desc in cursor.description]
+            rows = cursor.fetchall()
 
         output = StringIO()
         writer = csv.writer(output)
         writer.writerow(columns)
-        writer.writerows(data)
-
+        writer.writerows(rows)
         output.seek(0)
 
-        return jsonify({
-            'csv': output.getvalue(),
-            'mimetype': 'text/csv',
-            'headers': {
-                'Content-Disposition': f'attachment;filename={db_name}_logs.csv'
-            }
-        })
+        return Response(
+            output.getvalue(),
+            mimetype="text/csv",
+            headers={
+                "Content-Disposition": f"attachment;filename={db_name}_logs.csv"
+            },
+        )
 
-    except (Exception,) as e:
-        return jsonify({'error': f'Failed to export logs: {str(e)}'}), 500
+    except InvalidDatabaseName:
+        return jsonify(error="Invalid database name"), 400
+    except Exception as e:
+        return jsonify(error=f"Failed to export logs: {str(e)}"), 500
 
 
-@app.route('/api/clear', methods=['GET'])
+@app.route("/api/clear", methods=["GET"])
 @jwt_required()
 def clear_logs():
     try:
         db_name = get_jwt_identity()
-        conn = sqlite3.connect(f'db/{db_name}.db')
-        cursor = conn.cursor()
-        cursor.execute('DELETE FROM logs')
-        cursor.execute('UPDATE sqlite_sequence SET seq=0 WHERE name="logs"')
-        conn.commit()
-        conn.close()
-        return jsonify({'message': 'Logs cleared'}), 200
-    except (Exception,) as e:
+        db_path = db_path_from_name(db_name)
 
-        return jsonify({'error': f'Failed to clear logs: {str(e)}'}), 500
+        with sqlite3.connect(db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM logs")
+            cursor.execute('UPDATE sqlite_sequence SET seq = 0 WHERE name = \'logs\'')
+            conn.commit()
+
+        return jsonify(message="Logs cleared"), 200
+
+    except InvalidDatabaseName:
+        return jsonify(error="Invalid database name"), 400
+    except Exception as e:
+        return jsonify(error=f"Failed to clear logs: {str(e)}"), 500
 
 
 @jwt.unauthorized_loader
 def unauthorized_callback(error):
-    return jsonify({
-        'error': 'Missing or invalid Authorization header',
-        'description': str(error)
-    }), 401
+    return jsonify(error="Missing or invalid Authorization header", description=str(error)), 401
 
 
 @jwt.invalid_token_loader
 def invalid_token_callback(error):
-    return jsonify({
-        'error': 'Invalid token',
-        'description': str(error)
-    }), 401
+    return jsonify(error="Invalid token", description=str(error)), 401
 
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=9998, debug=True)
+if __name__ == "__main__":
+    ensure_db_dir()
+    app.run(host="0.0.0.0", port=9998, debug=True)

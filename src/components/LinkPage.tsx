@@ -1,7 +1,8 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {Container, Row} from 'react-bootstrap';
 import {useNavigate} from 'react-router-dom';
 import axios, {isAxiosError} from 'axios';
+import urlConfig from '../urlConfig.json';
 
 const LinkPage: React.FC = () => {
     const [key, setKey] = useState<string>('');
@@ -11,29 +12,20 @@ const LinkPage: React.FC = () => {
 
     const handleConnect = async (): Promise<void> => {
         try {
-            const response = await axios.post(`https://tracer.dedyn.io/api/link`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({key: key})
-            })
-
-            if (response.status !== 200) {
-                setError(response.data.message);
-                console.log(response);
-            }
-
+            const response = await axios.post(`${urlConfig.baseUrl}/api/link`, { key });
             localStorage.setItem('token', response.data.token);
-            setKey('');
+
+            setKey(key);
             setStatus('Connected successfully! You will be redirected back shortly');
+
             setTimeout((): void => {
                 navigate('/');
                 setStatus(null);
                 setError(null);
-            }, 3000)
+            }, 1500);
         } catch (error) {
-            setStatus('');
+            setStatus(null);
+
             if (isAxiosError(error)) {
                 setError('Network error, check console for details');
                 console.error(error);
@@ -44,6 +36,10 @@ const LinkPage: React.FC = () => {
         }
     }
 
+    useEffect(() => {
+        if (localStorage.getItem('token')) navigate('/');
+    }, [navigate]);
+    
     return (
         <>
             <Container className='d-flex justify-content-center align-items-center flex-column text-light'>
@@ -59,9 +55,9 @@ const LinkPage: React.FC = () => {
                                 type='text'
                                 className='form-control bg-dark-subtle rounded-start-pill p-3'
                                 placeholder='Enter key'
-                                value={key} onChange={(e) => { setKey(e.target.value) }}
+                                value={key} onChange={(e) => { setKey(e.target.value.trimStart()) }}
                             />
-                            <button className='btn btn-outline-secondary rounded-end-pill p-3' type='submit' id='button-addon2'>Connect</button>
+                            <button className='btn btn-outline-secondary rounded-end-pill p-3' type='submit' id='button-addon2' disabled={status === 'Connecting...'}>Connect</button>
                         </div>
                     </form>
                 </Row>

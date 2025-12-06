@@ -2,7 +2,7 @@ import React from "react";
 import Icon from "./Icon.tsx";
 
 interface QRImageProps {
-    key: number,
+    index: number,
     src: string,
 }
 
@@ -22,14 +22,14 @@ const openInNewTab = (base64DataUrl: string): void => {
     window.open(blobUrl, '_blank');
 };
 
-const QRImage: React.FC<QRImageProps> = ({ key, src }: QRImageProps) => {
+const QRImage: React.FC<QRImageProps> = ({ index, src }: QRImageProps) => {
     return (
         <div style={{
             border: '1px solid #4D5154',
             borderRadius: '8px'
         }}>
             <div className='d-flex flex-column align-items-end p-2'>
-                <img key={key} src={src} alt={`QR ${key + 1}`} style={{
+                <img src={src} alt={`QR ${index + 1}`} style={{
                     width: '150px',
                 }} />
                 <Icon className='bi bi-box-arrow-up-right mt-2 me-1' onClick={(): void => openInNewTab(src)}/>

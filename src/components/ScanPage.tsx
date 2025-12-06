@@ -1,14 +1,12 @@
 import React, {useEffect, useState} from 'react';
 import {Button, Col, Container, Modal, Row} from 'react-bootstrap';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import 'bootstrap/dist/js/bootstrap.bundle.min.js';
-import 'bootstrap-icons/font/bootstrap-icons.css';
 import {Buffer} from 'buffer';
 import Scanner from './Scanner';
 import axios, {isAxiosError} from 'axios';
+import urlConfig from '../urlConfig.json'
 
 const ScanPage: React.FC = () => {
-    const b64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+    const b64Regex = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
     const rentalRegex = /\b\w{1,6}\d{0,4}-\d+\b/;
     const [rentalId, setRentalId] = useState<string | null>(null);
     const [studentName, setStudentName] = useState<string | null>(null);
@@ -26,7 +24,8 @@ const ScanPage: React.FC = () => {
     };
 
     const handleError = (error: string | Error): void => {
-        if (error !== 'No QR code found') {
+        const message = typeof error === "string" ? error : error.message;
+        if (!message.includes('No QR code found')) {
             setError('Unknown error occurred with QR scanner. Check console for details');
             console.error(error);
         }
@@ -44,31 +43,28 @@ const ScanPage: React.FC = () => {
         setError('');
 
         const token = localStorage.getItem('token');
-        if (!token) {
-            setError('No token found. Please link this device');
-            return;
-        }
-
-        if (!rentalId || !studentName) {
-            setError('Rental or student not set correctly');
-            return;
-        }
+        if (!token) return setError('No token found. Please link this device');
+        if (!rentalId) return setError("Rental not detected");
+        if (!studentName) return setError("Student not detected");
 
         const now = new Date();
         try {
-            await axios.post(`https://tracer.dedyn.io/api/write`, {
-                body: {
+            await axios.post(
+                `${urlConfig.baseUrl}/api/write`,
+                {
                     rental: rentalId,
                     student: Buffer.from(studentName).toString('base64'),
-                    date: now.toLocaleDateString(),
-                    time: now.toLocaleTimeString(),
+                    date: now.toISOString().split("T")[0],
+                    time: now.toTimeString().split(" ")[0],
+                },
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
                 }
-            }, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+            );
+
         } catch (error) {
             if (isAxiosError(error)) {
                 if (error.response?.data.error === 'rental does not exist') {
@@ -84,10 +80,10 @@ const ScanPage: React.FC = () => {
     }
 
     useEffect((): void => {
-        if (rentalId && studentName) {
+        if (rentalId && studentName && !isModalOpen) {
             setIsModalOpen(true);
         }
-    }, [rentalId, studentName]);
+    }, [rentalId, studentName, isModalOpen]);
 
     return (
         <>
@@ -142,7 +138,7 @@ const ScanPage: React.FC = () => {
                 <Modal.Footer>
                     {writing && <div className='spinner-border spinner-border-sm me-3' role='status'></div>}
                     <Button variant='outline-danger' onClick={reset}>Cancel</Button>
-                    <Button variant='outline-primary' onClick={handleSubmit}>Confirm</Button>
+                    <Button variant='outline-primary' disabled={writing} onClick={handleSubmit}>Confirm</Button>
                 </Modal.Footer>
             </Modal>
         </>
