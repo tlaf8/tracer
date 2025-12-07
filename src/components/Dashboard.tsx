@@ -242,6 +242,7 @@ const Dashboard: React.FC = () => {
                     'Authorization': `Bearer ${token}`
                 }
             });
+
             setLogs(logsResponse.data.logs);
             setFetchingLogs(false);
 
@@ -342,17 +343,16 @@ const Dashboard: React.FC = () => {
                         }}>
                             <Table striped bordered hover responsive variant='dark'>
                                 <thead className='bg-dark'>
-                                <tr>
-                                    <th>Rental</th>
-                                    <th>Status</th>
-                                    <th>Renter</th>
-                                </tr>
+                                    <tr>
+                                        <th>Rental</th>
+                                        <th>Status</th>
+                                        <th>Renter</th>
+                                    </tr>
                                 </thead>
                                 <tbody>
-                                {status.map(stat => (
-                                    <Rental rental={stat.rental} status={stat.status} renter={stat.renter}
-                                            onDelete={removeRental}/>
-                                ))}
+                                    {status.map(((stat, key) => (
+                                        <Rental key={key} rental={stat.rental} status={stat.status} renter={stat.renter} onDelete={removeRental}/>
+                                    )))}
                                 </tbody>
                             </Table>
                         </div>
