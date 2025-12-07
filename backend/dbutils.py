@@ -40,6 +40,7 @@ def valid(key: str) -> bool:
         cursor = conn.cursor()
         cursor.execute("SELECT 1 FROM keys WHERE key = ?", (key,))
         result = cursor.fetchone()
+
     return bool(result)
 
 def ensure_table(db_name: str) -> None:
@@ -68,7 +69,8 @@ def ensure_table(db_name: str) -> None:
             CREATE TABLE IF NOT EXISTS status (
                                                   id INTEGER PRIMARY KEY AUTOINCREMENT,
                                                   rental TEXT UNIQUE NOT NULL,
-                                                  status TEXT NOT NULL
+                                                  status TEXT NOT NULL,
+                                                  renter TEXT NOT NULL
             )
             """
         )
