@@ -129,8 +129,8 @@ def add_rental(db_name: str, rentals: list[str]) -> None:
         cursor = conn.cursor()
         for rental in cleaned:
             cursor.execute(
-                "INSERT INTO status (rental, status) VALUES (?, ?)",
-                (rental, "IN"),
+                "INSERT INTO status (rental, status, renter) VALUES (?, ?, ?)",
+                (rental, "IN", ""),
             )
         conn.commit()
 
