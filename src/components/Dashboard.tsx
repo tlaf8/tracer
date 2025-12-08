@@ -180,10 +180,16 @@ const Dashboard: React.FC = () => {
                 (_, i) => `${rawString}-${autoGenStart + i}`
             );
 
-            const existingSet = new Set(prev);
-            const uniqueNewItems = newItems.filter(item => !existingSet.has(item));
+            const prevSet = new Set(prev);
+            const globalSet = new Set(status.map(s => s.rental));
+
+            const uniqueNewItems = newItems.filter(item =>
+                !prevSet.has(item) && !globalSet.has(item)
+            );
+
             return [...prev, ...uniqueNewItems];
         });
+
 
     };
 
@@ -200,30 +206,31 @@ const Dashboard: React.FC = () => {
             const response = await axios.get(`${urlConfig.baseUrl}/api/export`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
-                    Accept: 'application/json',
                 },
-                responseType: 'json',
+                responseType: 'blob',   // correct for CSV download
             });
 
-            if (!response.data || !response.data.csv) {
-                setGlobalError('No data to export.');
-                return;
+            // Extract filename from headers
+            const contentDisposition = response.headers['content-disposition'];
+            let filename = 'logs.csv';
+
+            if (contentDisposition) {
+                const match = contentDisposition.match(/filename="?(.+)"?/);
+                if (match && match[1]) filename = match[1];
             }
 
-            const filename =
-                response.data?.headers?.['Content-Disposition']?.split('filename=')[1]?.replace(/'/g, '') ||
-                'logs.csv';
+            // Create file and download
+            const blob = new Blob([response.data], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
 
-            const blob = new Blob([response.data.csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            // a.click();
+            document.body.removeChild(a);
 
-            link.href = url;
-            link.download = filename;
-            document.body.appendChild(link);
-            // link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
+            URL.revokeObjectURL(url);
 
             setClearModalOpen(true);
             setClearLogsError('');
@@ -364,7 +371,7 @@ const Dashboard: React.FC = () => {
                                 <thead className='bg-dark'>
                                 <tr>
                                     <th>ID</th>
-                                    <th>rental</th>
+                                    <th>Rental</th>
                                     <th>Action</th>
                                     <th>Student</th>
                                     <th>Date</th>
