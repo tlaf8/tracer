@@ -527,6 +527,13 @@ const Dashboard: React.FC = () => {
                                 </div>
                             )}
 
+                            {rentalList.length > 0 &&
+                                <button className='btn btn-outline-danger mt-2' onClick={() => { setRentalList([]) }} style={{
+                                    lineHeight: '10px',
+                                    width: '100%'
+                                }}>Clear</button>
+                            }
+
                             <div className='mt-3 overflow-y-auto scrollable-container' style={{ maxHeight: '50vh' }}>
                                 {rentalList.map((item, i) => (
                                     <div
