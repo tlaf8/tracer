@@ -19,13 +19,12 @@ const LinkPage: React.FC = () => {
             setStatus('Connected successfully! You will be redirected back shortly');
 
             setTimeout((): void => {
-                navigate('/');
                 setStatus(null);
                 setError(null);
+                navigate('/');
             }, 1500);
         } catch (error) {
             setStatus(null);
-
             if (isAxiosError(error)) {
                 setError('Network error, check console for details');
                 console.error(error);

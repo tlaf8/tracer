@@ -64,7 +64,6 @@ const ScanPage: React.FC = () => {
                     }
                 }
             );
-
         } catch (error) {
             if (isAxiosError(error)) {
                 if (error.response?.data.error === 'rental does not exist') {
@@ -75,7 +74,6 @@ const ScanPage: React.FC = () => {
                 console.error(error);
             }
         }
-
         reset();
     }
 

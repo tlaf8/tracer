@@ -94,15 +94,8 @@ const Dashboard: React.FC = () => {
         const token = localStorage.getItem('token');
         setRentalModalError('');
 
-        if (!token) {
-            setRentalModalError('No authentication token found. Please link this device.');
-            return;
-        }
-
-        if (rentalList.length === 0) {
-            setRentalModalError('No rentals entered.');
-            return;
-        }
+        if (!token) return setRentalModalError('No authentication token found. Please link this device.');
+        if (rentalList.length === 0) return setRentalModalError('No rentals entered.');
 
         try {
             await axios.post(
@@ -134,10 +127,7 @@ const Dashboard: React.FC = () => {
 
     const removeRental = async (rental: string): Promise<void> => {
         const token = localStorage.getItem('token');
-        if (!token) {
-            setGlobalError('No authentication token found. Please link this device.');
-            return;
-        }
+        if (!token) return setGlobalError('No authentication token found. Please link this device.');
 
         try {
             await axios.post(
@@ -195,10 +185,7 @@ const Dashboard: React.FC = () => {
         const token = localStorage.getItem('token');
         setGlobalError('');
 
-        if (!token) {
-            setGlobalError('No authentication token found. Please link this device.');
-            return;
-        }
+        if (!token) return setGlobalError('No authentication token found. Please link this device.');
 
         try {
             const response = await axios.get(`${urlConfig.baseUrl}/api/export`, {
@@ -223,7 +210,7 @@ const Dashboard: React.FC = () => {
             a.href = url;
             a.download = filename;
             document.body.appendChild(a);
-            // a.click();
+            a.click();
             document.body.removeChild(a);
 
             URL.revokeObjectURL(url);
@@ -240,10 +227,7 @@ const Dashboard: React.FC = () => {
         const token = localStorage.getItem('token');
         setClearLogsError('');
 
-        if (!token) {
-            setClearLogsError('No authentication token found. Please link this device.');
-            return;
-        }
+        if (!token) return setClearLogsError('No authentication token found. Please link this device.');
 
         try {
             await axios.get(`${urlConfig.baseUrl}/api/clear`, {
@@ -338,7 +322,6 @@ const Dashboard: React.FC = () => {
         <>
             <Container className='mt-5 p-4 bg-dark rounded'>
                 {globalError && <p className='text-danger'>{globalError}</p>}
-
                 <Row className='mb-3'>
                     <Col>
                         <h4 className='text-white'>
@@ -604,19 +587,14 @@ const Dashboard: React.FC = () => {
                 <Modal.Body>
                     <div className='mb-3' style={{ color: '#c4c4c4' }}>
                         <strong className='text-white'>Single Rental</strong>
-                        <br />
-                        Enter the name of the rental and click 'confirm'
+                        <p>Enter the name of the rental and press 'Enter'</p>
                     </div>
                     <div style={{ color: '#c4c4c4' }}>
                         <strong className='text-white'>Multiple Rentals</strong>
-                        <br />
-                        Enter each rental according to the following example:
-                        <div className='ms-3'>
-                            NAME-01
-                            <br />
-                            NAME-02
-                            <br />...
-                        </div>
+                        <p>Select 'Auto generate rentals' and enter the start and end numbers of rentals to be generated.</p>
+                    </div>
+                    <div>
+                        Once all names are entered, press 'Confirm' to add.
                     </div>
                 </Modal.Body>
             </Modal>
