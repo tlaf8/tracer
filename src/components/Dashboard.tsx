@@ -79,7 +79,8 @@ const Dashboard: React.FC = () => {
 
     const [rawString, setRawString] = useState<string>('');
     const [autoGenNumbers, setAutoGenNumbers] = useState(false);
-    const [autoGenNumEnd, setAutoGenNumEnd] = useState<number>(0);
+    const [autoGenStart, setAutoGenStart] = useState<number>(0);
+    const [autoGenEnd, setAutoGenEnd] = useState<number>(0);
     const [rentalList, setRentalList] = useState<Array<string>>([]);
 
     const reset = (): void => {
@@ -166,16 +167,24 @@ const Dashboard: React.FC = () => {
     };
 
     const generateRentals = (): void => {
-        if (autoGenNumEnd === 0 || rawString.trim() === '') {
-            setRentalModalError('No number or empty base.');
-            return;
-        }
+        if (autoGenStart < 0 || autoGenEnd < 0) return setRentalModalError('Numbers cannot be negative.');
+        if (autoGenEnd === 0) return setRentalModalError('End cannot be 0.');
+        if (autoGenStart > autoGenEnd) return setRentalModalError('Start cannot be greater than end.');
+        if (rawString.trim() === '') return setRentalModalError('No base provided.');
+        if (autoGenStart > autoGenEnd) return setRentalModalError('Start cannot be greater than end.');
 
         setRentalModalError('');
-        setRentalList(prev => [
-            ...prev,
-            ...Array.from({ length: autoGenNumEnd }, (_, i) => `${rawString}-${i + 1}`),
-        ]);
+        setRentalList(prev => {
+            const newItems = Array.from(
+                { length: autoGenEnd - autoGenStart + 1 },
+                (_, i) => `${rawString}-${autoGenStart + i}`
+            );
+
+            const existingSet = new Set(prev);
+            const uniqueNewItems = newItems.filter(item => !existingSet.has(item));
+            return [...prev, ...uniqueNewItems];
+        });
+
     };
 
     const exportCsv = async (): Promise<void> => {
@@ -492,21 +501,21 @@ const Dashboard: React.FC = () => {
                                     <input
                                         type='number'
                                         className='form-control bg-dark text-light border-secondary'
-                                        placeholder='Num Rentals'
+                                        placeholder='Start'
                                         style={{ maxWidth: '175px' }}
                                         onChange={e => {
                                             const val = e.target.value;
-                                            setAutoGenNumEnd(val === '' ? 0 : Number(val));
+                                            setAutoGenStart(val === '' ? 0 : Number(val));
                                         }}
                                     />
                                     <input
                                         type='number'
                                         className='form-control bg-dark text-light border-secondary'
-                                        placeholder='Num Rentals'
+                                        placeholder='End'
                                         style={{ maxWidth: '175px' }}
                                         onChange={e => {
                                             const val = e.target.value;
-                                            setAutoGenNumEnd(val === '' ? 0 : Number(val));
+                                            setAutoGenEnd(val === '' ? 0 : Number(val));
                                         }}
                                     />
                                     <button className='btn btn-outline-primary ms-2' onClick={generateRentals}>
@@ -515,7 +524,7 @@ const Dashboard: React.FC = () => {
                                 </div>
                             )}
 
-                            <div className='mt-3' style={{ maxHeight: '50vh' }}>
+                            <div className='mt-3 overflow-y-auto scrollable-container' style={{ maxHeight: '50vh' }}>
                                 {rentalList.map((item, i) => (
                                     <div
                                         className='p-2 mt-1 d-flex flex-row justify-content-between'
