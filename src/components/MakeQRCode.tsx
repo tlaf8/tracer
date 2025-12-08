@@ -1,6 +1,6 @@
-import React, {useState} from "react";
+import React, { useState } from "react";
 import QRCodeGrid from "./QRCodeGrid";
-import {Buffer} from 'buffer';
+import { Buffer } from 'buffer';
 import Icon from "./Icon.tsx";
 
 interface QRItem {
@@ -15,54 +15,94 @@ const MakeQRCode: React.FC = () => {
     const [dataList, setDataList] = useState<Array<string>>([]);
     const [qrData, setQrData] = useState<QRItem[]>([]);
 
+    const [autoGenNumbers, setAutoGenNumbers] = useState(false);
+    const [autoGenStart, setAutoGenStart] = useState<number>(0);
+    const [autoGenEnd, setAutoGenEnd] = useState<number>(0);
+
+    const [error, setError] = useState<string>('');
+
     const onDelete = (index: number): void => {
         setDataList(prev => prev.filter((_, i) => i !== index));
         setQrData(prev => prev.filter((_, i) => i !== index));
-    }
+    };
+
+    const generateEntries = (): void => {
+        const base = rawString.trim();
+        if (!base) return setError('No base provided.');
+        if (autoGenStart < 0 || autoGenEnd < 0) return setError('Numbers cannot be negative.');
+        if (autoGenEnd < autoGenStart) return setError('Start cannot be greater than end.');
+
+        const existingLabels = new Set(dataList);
+        const existingQR = new Set(qrData.map(q => q.label));
+
+        const newItems: string[] = Array.from(
+            { length: autoGenEnd - autoGenStart + 1 },
+            (_, i) => `${base}-${autoGenStart + i}`
+        );
+
+        const uniqueItems = newItems.filter(
+            item => !existingLabels.has(item) && !existingQR.has(item)
+        );
+
+        if (uniqueItems.length === 0) return;
+
+        const newQRObjects: QRItem[] = uniqueItems.map(item => ({
+            label: item,
+            encoding: b64encode,
+            data: b64encode ? Buffer.from(item).toString("base64") : item
+        }));
+
+        setDataList(prev => [...prev, ...uniqueItems]);
+        setQrData(prev => [...prev, ...newQRObjects]);
+    };
+
+    const addManualEntry = (): void => {
+        const trimmed = rawString.trim();
+        if (!trimmed) return;
+
+        const entry = b64encode ? Buffer.from(trimmed).toString('base64') : trimmed;
+
+        setDataList(prev => [...prev, trimmed]);
+        setQrData(prev => [...prev, {
+            data: entry,
+            encoding: b64encode,
+            label: trimmed
+        }]);
+
+        setRawString('');
+    };
 
     return (
         <>
-            <div className='d-flex flex-row' style={{
+            <div data-bs-theme='dark' className='d-flex flex-row' style={{
                 height: 'calc(100vh - 110px)'
             }}>
+                {/* LEFT PANEL */}
                 <div style={{
                     width: '40vw',
                     height: '80vh',
                     display: 'flex',
                     flexDirection: 'column',
-                    alignItems: 'center',
-                    marginTop: '5vh'
+                    alignItems: 'start',
+                    marginTop: '5vh',
+                    marginLeft: '3vw'
                 }}>
                     <div className='w-75 text-light mb-1'>
                         Enter student or device name(s):
                     </div>
+
                     <div className='w-75 text-light d-flex flex-column align-items-end'>
-                        <div className='input-group mb-3'>
+                        <div className='input-group mb-2'>
                             <input
                                 className='form-control bg-dark text-light border-secondary'
                                 value={rawString}
-                                onChange={(e) => {
-                                    setRawString(e.target.value.trimStart());
-                                }}
+                                onChange={(e) => setRawString(e.target.value.trimStart())}
                                 onKeyDown={(e) => {
-                                    if (e.key !== 'Enter') return;
-                                    const trimmed = rawString.trim();
-                                    if (!trimmed) return;
-
-                                    const entry = b64encode ? Buffer.from(trimmed).toString('base64') : trimmed;
-
-                                    setDataList(prev => [...prev, trimmed]);
-                                    setQrData(prev => [...prev, {
-                                        data: entry,
-                                        encoding: b64encode,
-                                        label: trimmed
-                                    }]);
-                                    setRawString('');
+                                    if (e.key === 'Enter') addManualEntry();
                                 }}
-                                style={{
-                                    width: '65%'
-                                }}
-                            ></input>
+                                style={{ width: '65%' }}
+                            />
+
                             <select
                                 className="form-select bg-dark text-light border-secondary w-auto"
                                 value={b64encode ? "student" : "device"}
@@ -73,35 +113,101 @@ const MakeQRCode: React.FC = () => {
                             </select>
                         </div>
                     </div>
-                    <div className='d-flex flex-column w-80 mt-1 text-light overflow-auto scrollable-container'>
+
+                    <div className="w-75 d-flex flex-column text-light">
+                        <div className="form-check form-switch mb-2">
+                            <input
+                                className="form-check-input"
+                                type="checkbox"
+                                id="autoGenNumbers"
+                                checked={autoGenNumbers}
+                                onChange={e => setAutoGenNumbers(e.target.checked)}
+                            />
+                            <label className="form-check-label" htmlFor="autoGenNumbers">
+                                Auto generate entries
+                            </label>
+                        </div>
+
+                        {autoGenNumbers && (
+                            <div className="d-flex flex-row align-items-center">
+                                <input
+                                    type="number"
+                                    className="form-control bg-dark text-light border-secondary me-2"
+                                    placeholder="Start"
+                                    style={{ maxWidth: "175px" }}
+                                    onChange={e => {
+                                        const val = e.target.value;
+                                        setAutoGenStart(val === "" ? 0 : Number(val));
+                                    }}
+                                />
+
+                                <input
+                                    type="number"
+                                    className="form-control bg-dark text-light border-secondary me-2"
+                                    placeholder="End"
+                                    style={{ maxWidth: "175px" }}
+                                    onChange={e => {
+                                        const val = e.target.value;
+                                        setAutoGenEnd(val === "" ? 0 : Number(val));
+                                    }}
+                                />
+
+                                <button
+                                    className="btn btn-outline-primary"
+                                    onClick={generateEntries}
+                                >
+                                    Generate
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {error && (
+                        <p className='m-0 mt-2 text-end' style={{ color: 'red' }}>
+                            {error}
+                        </p>
+                    )}
+
+                    <div className='d-flex flex-column w-80 mt-3 text-light overflow-auto scrollable-container'>
                         {dataList.length > 0 &&
-                            <button className='btn btn-outline-secondary' style={{
-                                lineHeight: '10px',
-                            }} onClick={() => {
-                                setDataList([]);
-                                setQrData([]);
-                            }}>Clear</button>
+                            <button className='btn btn-outline-secondary mb-2' style={{ lineHeight: '10px' }}
+                                    onClick={() => {
+                                        setDataList([]);
+                                        setQrData([]);
+                                    }}>
+                                Clear
+                            </button>
                         }
+
                         {dataList.map((item, i) => (
-                            <div className='p-2 mt-1 d-flex flex-row justify-content-between' key={item} style={{
-                                border: '1px solid #4D5154',
-                                borderRadius: 'var(--bs-border-radius)',
-                                width: '30vw'
-                            }}>
-                                <div style={{ maxWidth: '90%', textOverflow: 'ellipsis', overflow: 'hidden'}}>{item}</div>
-                                <Icon className='bi bi-x float-end' onClick={(): void => onDelete(i)} hoverColor='orangered'/>
+                            <div
+                                className='p-2 mt-1 d-flex flex-row justify-content-between'
+                                key={item}
+                                style={{
+                                    border: '1px solid #4D5154',
+                                    borderRadius: 'var(--bs-border-radius)',
+                                    width: '30vw'
+                                }}
+                            >
+                                <div style={{ maxWidth: '90%', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                                    {item}
+                                </div>
+                                <Icon
+                                    className='bi bi-x float-end'
+                                    onClick={() => onDelete(i)}
+                                    hoverColor='orangered'
+                                />
                             </div>
                         ))}
                     </div>
                 </div>
-                <div style={{
-                    width: '60vw',
-                }}>
-                    <QRCodeGrid qrData={qrData}/>
+
+                <div style={{ width: '60vw' }}>
+                    <QRCodeGrid qrData={qrData} />
                 </div>
             </div>
         </>
-    )
+    );
 };
 
 export default MakeQRCode;

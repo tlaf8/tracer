@@ -189,8 +189,6 @@ const Dashboard: React.FC = () => {
 
             return [...prev, ...uniqueNewItems];
         });
-
-
     };
 
     const exportCsv = async (): Promise<void> => {
@@ -207,10 +205,9 @@ const Dashboard: React.FC = () => {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
-                responseType: 'blob',   // correct for CSV download
+                responseType: 'blob',
             });
 
-            // Extract filename from headers
             const contentDisposition = response.headers['content-disposition'];
             let filename = 'logs.csv';
 
@@ -219,7 +216,6 @@ const Dashboard: React.FC = () => {
                 if (match && match[1]) filename = match[1];
             }
 
-            // Create file and download
             const blob = new Blob([response.data], { type: 'text/csv' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
