@@ -23,7 +23,7 @@ const MakeQRCode: React.FC = () => {
     const [autoGenEnd, setAutoGenEnd] = useState<number>(0);
 
     const [error, setError] = useState<string>('');
-    const [pasteError, setPasteError] = useState("");
+    const [pasteError, setPasteError] = useState('');
 
     const onDelete = (index: number): void => {
         setDataList(prev => prev.filter((_, i) => i !== index));
@@ -31,10 +31,13 @@ const MakeQRCode: React.FC = () => {
     };
 
     const generateEntries = (): void => {
+        setError('');
+
         const base = rawString.trim();
         if (!base) return setError('No base provided.');
         if (autoGenStart < 0 || autoGenEnd < 0) return setError('Numbers cannot be negative.');
         if (autoGenEnd < autoGenStart) return setError('Start cannot be greater than end.');
+        if (autoGenEnd === 0) return setError('End cannot be 0.');
 
         const existingLabels = new Set(dataList);
         const existingQR = new Set(qrData.map(q => q.label));
@@ -164,7 +167,10 @@ const MakeQRCode: React.FC = () => {
                                     type="checkbox"
                                     id="autoGenNumbers"
                                     checked={autoGenNumbers}
-                                    onChange={e => setAutoGenNumbers(e.target.checked)}
+                                    onChange={e => {
+                                        setError('');
+                                        setAutoGenNumbers(e.target.checked);
+                                    }}
                                 />
                                 <label className="form-check-label" htmlFor="autoGenNumbers">
                                     Auto generate entries

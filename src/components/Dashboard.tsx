@@ -182,9 +182,11 @@ const Dashboard: React.FC = () => {
     };
 
     const exportCsv = async (): Promise<void> => {
-        const token = localStorage.getItem('token');
         setGlobalError('');
 
+        if (logs.length === 0) return setGlobalError('No logs to export.');
+
+        const token = localStorage.getItem('token');
         if (!token) return setGlobalError('No authentication token found. Please link this device.');
 
         try {
