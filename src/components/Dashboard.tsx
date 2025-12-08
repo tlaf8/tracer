@@ -1,10 +1,10 @@
-import React, {useCallback, useEffect, useState} from 'react';
-import axios, {isAxiosError} from 'axios';
-import {Button, Col, Container, Modal, Row, Table} from 'react-bootstrap';
+import React, { useCallback, useEffect, useState } from 'react';
+import axios, { isAxiosError } from 'axios';
+import { Button, Col, Container, Modal, Row, Table } from 'react-bootstrap';
 import Rental from './Rental';
-import {Link} from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import Icon from './Icon';
-import urlConfig from '../urlConfig.json'
+import urlConfig from '../urlConfig.json';
 
 interface Status {
     id: number;
@@ -36,7 +36,7 @@ const splitIntoParts = (str: string): (string | number)[] => {
     }
 
     return parts;
-}
+};
 
 const naturalCompare = (a: string, b: string): number => {
     const aParts = splitIntoParts(a);
@@ -61,7 +61,7 @@ const naturalCompare = (a: string, b: string): number => {
     }
 
     return aParts.length - bParts.length;
-}
+};
 
 const Dashboard: React.FC = () => {
     const [logs, setLogs] = useState<Array<Record<string, string>>>([]);
@@ -72,12 +72,18 @@ const Dashboard: React.FC = () => {
     const [clearModalOpen, setClearModalOpen] = useState<boolean>(false);
     const [fetchingRentals, setFetchingRentals] = useState<boolean>(false);
     const [fetchingLogs, setFetchingLogs] = useState<boolean>(false);
-    const [error, setError] = useState<string>('');
+
+    const [globalError, setGlobalError] = useState<string>('');
+    const [rentalModalError, setRentalModalError] = useState<string>('');
+    const [clearLogsError, setClearLogsError] = useState<string>('');
+
     const [rawString, setRawString] = useState<string>('');
+    const [autoGenNumbers, setAutoGenNumbers] = useState(false);
+    const [autoGenNumEnd, setAutoGenNumEnd] = useState<number>(0);
     const [rentalList, setRentalList] = useState<Array<string>>([]);
 
     const reset = (): void => {
-        setError('');
+        setRentalModalError('');
         setFetchingRentals(false);
         setFetchingLogs(false);
         setRentalModalOpen(false);
@@ -85,24 +91,27 @@ const Dashboard: React.FC = () => {
 
     const addRental = async (): Promise<void> => {
         const token = localStorage.getItem('token');
+        setRentalModalError('');
+
         if (!token) {
-            setError('No authentication token found. Please link this device.');
+            setRentalModalError('No authentication token found. Please link this device.');
             return;
         }
 
         if (rentalList.length === 0) {
-            setError('No rentals entered.');
+            setRentalModalError('No rentals entered.');
             return;
         }
 
         try {
-            await axios.post(`${urlConfig.baseUrl}/api/rentals/add`,
+            await axios.post(
+                `${urlConfig.baseUrl}/api/rentals/add`,
                 { rentals: rentalList },
                 {
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    }
+                        'Authorization': `Bearer ${token}`,
+                    },
                 }
             );
 
@@ -111,10 +120,12 @@ const Dashboard: React.FC = () => {
         } catch (err) {
             if (isAxiosError(err)) {
                 if (err.response?.status === 400) {
-                    setError(err.response?.data.error);
+                    setRentalModalError(err.response?.data.error || 'Invalid rentals.');
+                } else {
+                    setRentalModalError(err.message || 'Error adding rentals.');
                 }
             } else {
-                setError('Something went wrong, check console for details.');
+                setRentalModalError('Something went wrong, check console for details.');
                 console.error(err);
             }
         }
@@ -123,58 +134,77 @@ const Dashboard: React.FC = () => {
     const removeRental = async (rental: string): Promise<void> => {
         const token = localStorage.getItem('token');
         if (!token) {
-            setError('No authentication token found. Please link this device.');
+            setGlobalError('No authentication token found. Please link this device.');
             return;
         }
 
         try {
-            const response = await axios.post(
+            await axios.post(
                 `${urlConfig.baseUrl}/api/rentals/remove`,
-                { rental: rental },
+                { rental },
                 {
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    }
+                        'Authorization': `Bearer ${token}`,
+                    },
                 }
             );
 
-            console.log(response);
             await fetchDataCallback();
         } catch (err) {
             if (isAxiosError(err)) {
                 if (err.response?.status === 404) {
-                    setError(err.response?.data.error);
+                    setGlobalError(err.response?.data.error || 'Rental not found.');
+                } else {
+                    setGlobalError(err.message || 'Error removing rental.');
                 }
             } else {
-                setError('Something went wrong, check console for details.');
+                setGlobalError('Something went wrong, check console for details.');
                 console.error(err);
             }
         }
-    }
+    };
+
+    const generateRentals = (): void => {
+        if (autoGenNumEnd === 0 || rawString.trim() === '') {
+            setRentalModalError('No number or empty base.');
+            return;
+        }
+
+        setRentalModalError('');
+        setRentalList(prev => [
+            ...prev,
+            ...Array.from({ length: autoGenNumEnd }, (_, i) => `${rawString}-${i + 1}`),
+        ]);
+    };
 
     const exportCsv = async (): Promise<void> => {
         const token = localStorage.getItem('token');
+        setGlobalError('');
+
         if (!token) {
-            setError('No authentication token found. Please link this device.');
+            setGlobalError('No authentication token found. Please link this device.');
             return;
         }
 
         try {
             const response = await axios.get(`${urlConfig.baseUrl}/api/export`, {
                 headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
+                    Authorization: `Bearer ${token}`,
+                    Accept: 'application/json',
                 },
-                responseType: 'json'
+                responseType: 'json',
             });
 
             if (!response.data || !response.data.csv) {
-                setError('No data to export');
+                setGlobalError('No data to export.');
                 return;
             }
 
-            const filename = response.data?.headers?.['Content-Disposition']?.split('filename=')[1]?.replace(/'/g, '') || 'logs.csv';
+            const filename =
+                response.data?.headers?.['Content-Disposition']?.split('filename=')[1]?.replace(/'/g, '') ||
+                'logs.csv';
+
             const blob = new Blob([response.data.csv], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
@@ -185,35 +215,42 @@ const Dashboard: React.FC = () => {
             // link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
+
             setClearModalOpen(true);
+            setClearLogsError('');
         } catch (err) {
-            setError('Cannot export data to CSV. Please try again.');
+            setGlobalError('Cannot export data to CSV. Please try again.');
             console.error('Export error:', err);
         }
     };
 
     const clearLogs = async (): Promise<void> => {
         const token = localStorage.getItem('token');
+        setClearLogsError('');
+
         if (!token) {
-            setError('No authentication token found. Please link this device.');
+            setClearLogsError('No authentication token found. Please link this device.');
+            return;
         }
 
         try {
             await axios.get(`${urlConfig.baseUrl}/api/clear`, {
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
+                    'Authorization': `Bearer ${token}`,
+                },
             });
 
             setClearModalOpen(false);
         } catch (err) {
             if (isAxiosError(err)) {
                 if (err.response?.status === 400) {
-                    setError(err.response?.data.error);
+                    setClearLogsError(err.response?.data.error || 'Unable to clear logs.');
+                } else {
+                    setClearLogsError(err.message || 'Error clearing logs.');
                 }
             } else {
-                setError('Something went wrong, check console for details.');
+                setClearLogsError('Something went wrong, check console for details.');
                 console.error(err);
             }
         }
@@ -223,24 +260,26 @@ const Dashboard: React.FC = () => {
         const newList = [...rentalList];
         newList.splice(index, 1);
         setRentalList(newList);
-   }
+    };
 
     const fetchDataCallback = useCallback(async (): Promise<void> => {
         setFetchingRentals(true);
         setFetchingLogs(true);
-        setError('');
+        setGlobalError('');
 
         const token = localStorage.getItem('token');
         if (!token) {
-            setError('No authentication token found. Please link this device.');
+            setGlobalError('No authentication token found. Please link this device.');
+            setFetchingRentals(false);
+            setFetchingLogs(false);
             return;
         }
 
         try {
             const logsResponse = await axios.get(`${urlConfig.baseUrl}/api/logs`, {
                 headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                    Authorization: `Bearer ${token}`,
+                },
             });
 
             setLogs(logsResponse.data.logs);
@@ -248,29 +287,29 @@ const Dashboard: React.FC = () => {
 
             const statusResponse = await axios.get(`${urlConfig.baseUrl}/api/status`, {
                 headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                    Authorization: `Bearer ${token}`,
+                },
             });
 
-            const sortedStatus = [...statusResponse.data.status].sort((a: Status, b: Status) => {
-                return naturalCompare(a.rental, b.rental);
-            });
+            const sortedStatus = [...statusResponse.data.status].sort((a: Status, b: Status) =>
+                naturalCompare(a.rental, b.rental)
+            );
 
             setStatus(sortedStatus);
             setFetchingRentals(false);
-
         } catch (err) {
             setFetchingRentals(false);
             setFetchingLogs(false);
+
             if (isAxiosError(err)) {
-                if (err.status === 401) {
+                if (err.response?.status === 401) {
                     localStorage.removeItem('token');
-                    setError('Invalid token, please link this device again');
+                    setGlobalError('Invalid token, please link this device again.');
                 } else {
-                    setError(err.message);
+                    setGlobalError(err.message || 'Error fetching data.');
                 }
             } else {
-                setError('Something went wrong, check console for details.');
+                setGlobalError('Something went wrong, check console for details.');
                 console.error(err);
             }
         }
@@ -278,7 +317,7 @@ const Dashboard: React.FC = () => {
 
     useEffect((): void => {
         fetchDataCallback().catch(err => {
-            setError('Failed fetching data. Check console for details');
+            setGlobalError('Failed fetching data. Check console for details.');
             console.error(err);
         });
     }, [fetchDataCallback]);
@@ -286,21 +325,32 @@ const Dashboard: React.FC = () => {
     return (
         <>
             <Container className='mt-5 p-4 bg-dark rounded'>
-                {error && <p className='text-danger'>{error}</p>}
+                {globalError && <p className='text-danger'>{globalError}</p>}
+
                 <Row className='mb-3'>
                     <Col>
-                        <h4 className='text-white'>Logs
-                            <Icon className='bi-arrow-clockwise float-end' onClick={fetchDataCallback}/>
-                            <Icon className='bi bi-file-earmark-arrow-down me-2 float-end'
-                                  onClick={(): Promise<void> => exportCsv()}/>
-                            {fetchingLogs && <div className='spinner-border spinner-border-sm float-end me-2 mt-1'
-                                                  role='status'></div>}
+                        <h4 className='text-white'>
+                            Logs
+                            <Icon className='bi-arrow-clockwise float-end' onClick={fetchDataCallback} />
+                            <Icon
+                                className='bi bi-file-earmark-arrow-down me-2 float-end'
+                                onClick={(): Promise<void> => exportCsv()}
+                            />
+                            {fetchingLogs && (
+                                <div
+                                    className='spinner-border spinner-border-sm float-end me-2 mt-1'
+                                    role='status'
+                                ></div>
+                            )}
                         </h4>
-                        <div className='overflow-y-auto' style={{
-                            maxHeight: '30vh',
-                            scrollbarWidth: 'none',
-                            border: '1px solid #4D5154'
-                        }}>
+                        <div
+                            className='overflow-y-auto'
+                            style={{
+                                maxHeight: '30vh',
+                                scrollbarWidth: 'none',
+                                border: '1px solid #4D5154',
+                            }}
+                        >
                             <Table striped bordered hover responsive variant='dark'>
                                 <thead className='bg-dark'>
                                 <tr>
@@ -331,153 +381,262 @@ const Dashboard: React.FC = () => {
 
                 <Row>
                     <Col>
-                        <h4 className='text-white'>Rentals
-                            <Icon className='bi-plus float-end' onClick={(): void => setRentalModalOpen(true)}/>
-                            {fetchingRentals && <div className='spinner-border spinner-border-sm float-end me-2 mt-1'
-                                                     role='status'></div>}
+                        <h4 className='text-white'>
+                            Rentals
+                            <Icon className='bi-plus float-end' onClick={(): void => setRentalModalOpen(true)} />
+                            {fetchingRentals && (
+                                <div
+                                    className='spinner-border spinner-border-sm float-end me-2 mt-1'
+                                    role='status'
+                                ></div>
+                            )}
                         </h4>
-                        <div className='overflow-y-auto' style={{
-                            maxHeight: '30vh',
-                            scrollbarWidth: 'none',
-                            border: '1px solid #4D5154'
-                        }}>
+                        <div
+                            className='overflow-y-auto'
+                            style={{
+                                maxHeight: '30vh',
+                                scrollbarWidth: 'none',
+                                border: '1px solid #4D5154',
+                            }}
+                        >
                             <Table striped bordered hover responsive variant='dark'>
                                 <thead className='bg-dark'>
-                                    <tr>
-                                        <th>Rental</th>
-                                        <th>Status</th>
-                                        <th>Renter</th>
-                                    </tr>
+                                <tr>
+                                    <th>Rental</th>
+                                    <th>Status</th>
+                                    <th>Renter</th>
+                                </tr>
                                 </thead>
                                 <tbody>
-                                    {status.map(((stat, key) => (
-                                        <Rental key={key} rental={stat.rental} status={stat.status} renter={stat.renter} onDelete={removeRental}/>
-                                    )))}
+                                {status.map((stat, key) => (
+                                    <Rental
+                                        key={key}
+                                        rental={stat.rental}
+                                        status={stat.status}
+                                        renter={stat.renter}
+                                        onDelete={removeRental}
+                                    />
+                                ))}
                                 </tbody>
                             </Table>
                         </div>
-                        <div className='float-end mt-2'
-                             onMouseEnter={(): void => setHoveringStudent(true)}
-                             onMouseLeave={(): void => setHoveringStudent(false)}
+                        <div
+                            className='float-end mt-2'
+                            onMouseEnter={(): void => setHoveringStudent(true)}
+                            onMouseLeave={(): void => setHoveringStudent(false)}
                         >
-                            <Link to='/make' style={{
-                                textDecoration: 'none',
-                                color: hoveringStudent ? 'white' : '#4D5154',
-                                fontSize: '0.9rem'
-                            }}>Create QR Codes</Link>
+                            <Link
+                                to='/make'
+                                style={{
+                                    textDecoration: 'none',
+                                    color: hoveringStudent ? 'white' : '#4D5154',
+                                    fontSize: '0.9rem',
+                                }}
+                            >
+                                Create QR Codes
+                            </Link>
                         </div>
                     </Col>
                 </Row>
             </Container>
 
+            {/* New rental modal */}
             <Modal show={rentalModalOpen} data-bs-theme='dark' className='text-light'>
                 <Modal.Header>
-                    <Modal.Title style={{
-                        width: '100%',
-                        display: 'flex',
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
-                    }}>
+                    <Modal.Title
+                        style={{
+                            width: '100%',
+                            display: 'flex',
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                        }}
+                    >
                         New rental
-                        <Icon className='ms-3 bi bi-info-circle' onClick={(): void => setHelpModalOpen(true)}/>
+                        <Icon className='ms-3 bi bi-info-circle' onClick={(): void => setHelpModalOpen(true)} />
                     </Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     <div>
-                        <div>
-                            Enter new name of device:
-                        </div>
+                        <div>Enter new name of device:</div>
                         <div className='mt-3'>
                             <input
-                            className='form-control bg-dark text-light border-secondary'
-                            value={rawString}
-                            onChange={(e) => {
-                                setRawString(e.target.value);
-                            }}
-                            onKeyDown={(k) => {
-                                const trimmed = rawString.trim();
-                                if (k.key === 'Enter' && trimmed !== '') {
-                                    setRentalList([...rentalList, trimmed]);
-                                    setRawString('');
-                                }
-                            }}
-                            ></input>
-                            <div className='mt-3' style={{
-                                maxHeight: '50vh',
-                            }}>
+                                className='form-control bg-dark text-light border-secondary'
+                                value={rawString}
+                                onChange={e => setRawString(e.target.value)}
+                                onKeyDown={k => {
+                                    const trimmed = rawString.trim();
+                                    if (k.key === 'Enter' && trimmed !== '') {
+                                        setRentalList([...rentalList, trimmed]);
+                                        setRawString('');
+                                    }
+                                }}
+                            />
+
+                            <div className='form-check form-switch mt-2 mb-2'>
+                                <input
+                                    className='form-check-input'
+                                    type='checkbox'
+                                    role='switch'
+                                    id='autoGenNumbers'
+                                    checked={autoGenNumbers}
+                                    onChange={e => setAutoGenNumbers(e.target.checked)}
+                                />
+                                <label className='form-check-label' htmlFor='autoGenNumbers'>
+                                    Auto generate rentals
+                                </label>
+                            </div>
+
+                            {autoGenNumbers && (
+                                <div className='d-flex flex-row justify-content-between align-items-center'>
+                                    <input
+                                        type='number'
+                                        className='form-control bg-dark text-light border-secondary'
+                                        placeholder='Num Rentals'
+                                        style={{ maxWidth: '175px' }}
+                                        onChange={e => {
+                                            const val = e.target.value;
+                                            setAutoGenNumEnd(val === '' ? 0 : Number(val));
+                                        }}
+                                    />
+                                    <input
+                                        type='number'
+                                        className='form-control bg-dark text-light border-secondary'
+                                        placeholder='Num Rentals'
+                                        style={{ maxWidth: '175px' }}
+                                        onChange={e => {
+                                            const val = e.target.value;
+                                            setAutoGenNumEnd(val === '' ? 0 : Number(val));
+                                        }}
+                                    />
+                                    <button className='btn btn-outline-primary ms-2' onClick={generateRentals}>
+                                        Generate
+                                    </button>
+                                </div>
+                            )}
+
+                            <div className='mt-3' style={{ maxHeight: '50vh' }}>
                                 {rentalList.map((item, i) => (
-                                    <div className='p-2 mt-1 d-flex flex-row justify-content-between' key={i} style={{
-                                        border: '1px solid #4D5154',
-                                        borderRadius: 'var(--bs-border-radius)'
-                                    }}>
-                                        <div style={{ maxWidth: '90%', textOverflow: 'ellipsis', overflow: 'hidden'}}>{item}</div>
-                                        <Icon className='bi bi-x float-end' onClick={(): void => onDelete(i)} hoverColor='orangered'/>
+                                    <div
+                                        className='p-2 mt-1 d-flex flex-row justify-content-between'
+                                        key={i}
+                                        style={{
+                                            border: '1px solid #4D5154',
+                                            borderRadius: 'var(--bs-border-radius)',
+                                        }}
+                                    >
+                                        <div
+                                            style={{
+                                                maxWidth: '90%',
+                                                textOverflow: 'ellipsis',
+                                                overflow: 'hidden',
+                                            }}
+                                        >
+                                            {item}
+                                        </div>
+                                        <Icon
+                                            className='bi bi-x float-end'
+                                            onClick={() => onDelete(i)}
+                                            hoverColor='orangered'
+                                        />
                                     </div>
                                 ))}
                             </div>
                         </div>
                     </div>
                 </Modal.Body>
-                <Modal.Footer style={{width: '100%'}}>
-                    <div className='d-flex flex-column' style={{width: '35%'}}>
-                        <div className='d-flex justify-content-between'>
-                            <Button variant='outline-danger' onClick={reset}>Cancel</Button>
-                            <Button variant='outline-primary' onClick={async (): Promise<void> => {
-                                await addRental();
-                                setRentalList([]);
-                            }}>Confirm</Button>
+                <Modal.Footer>
+                    <div className='w-100 d-flex flex-column'>
+                        <div className='d-flex justify-content-end'>
+                            <button className='btn btn-outline-danger me-2' onClick={reset}>
+                                Cancel
+                            </button>
+
+                            <button
+                                className='btn btn-outline-primary'
+                                onClick={async (): Promise<void> => {
+                                    await addRental();
+                                    setRentalList([]);
+                                }}
+                            >
+                                Confirm
+                            </button>
                         </div>
-                        <div className='mt-2'>
-                            {error && <p className='m-0' style={{color: 'red'}}>Error: {error}</p>}
-                        </div>
+                        {rentalModalError && (
+                            <p className='m-0 mt-2 text-end' style={{ color: 'red' }}>
+                                {rentalModalError}
+                            </p>
+                        )}
                     </div>
                 </Modal.Footer>
             </Modal>
 
-            <Modal size='sm' show={helpModalOpen} onHide={(): void => setHelpModalOpen(false)} data-bs-theme='dark' className='text-light'>
+            {/* Help modal */}
+            <Modal
+                size='sm'
+                show={helpModalOpen}
+                onHide={(): void => setHelpModalOpen(false)}
+                data-bs-theme='dark'
+                className='text-light'
+            >
                 <Modal.Header closeButton>
-                    <Modal.Title>
-                        Help
-                    </Modal.Title>
+                    <Modal.Title>Help</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    <div className='mb-3' style={{color: '#c4c4c4'}}>
-                        <strong className='text-white'>Single Rental</strong><br/>
+                    <div className='mb-3' style={{ color: '#c4c4c4' }}>
+                        <strong className='text-white'>Single Rental</strong>
+                        <br />
                         Enter the name of the rental and click 'confirm'
                     </div>
-                    <div style={{color: '#c4c4c4'}}>
-                        <strong className='text-white'>Multiple Rentals</strong><br/>
+                    <div style={{ color: '#c4c4c4' }}>
+                        <strong className='text-white'>Multiple Rentals</strong>
+                        <br />
                         Enter each rental according to the following example:
                         <div className='ms-3'>
-                            NAME-01<br/>
-                            NAME-02<br/>
-                            ...
+                            NAME-01
+                            <br />
+                            NAME-02
+                            <br />...
                         </div>
                     </div>
                 </Modal.Body>
             </Modal>
 
-            <Modal centered show={clearModalOpen} onHide={(): void => setClearModalOpen(false)} data-bs-theme='dark' className='text-light'>
+            {/* Clear logs modal */}
+            <Modal
+                centered
+                show={clearModalOpen}
+                onHide={(): void => setClearModalOpen(false)}
+                data-bs-theme='dark'
+                className='text-light'
+            >
                 <Modal.Header closeButton>
-                    <Modal.Title>
-                        Clear Logs
-                    </Modal.Title>
+                    <Modal.Title>Clear Logs</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    <div className='mb-3' style={{color: '#c4c4c4'}}>
-                        A copy of logs have been downloaded to your device in a format compatible with Excel, do you want to clear logs?
+                    <div className='mb-3' style={{ color: '#c4c4c4' }}>
+                        A copy of logs have been downloaded to your device in a format compatible with Excel, do you
+                        want to clear logs?
                     </div>
                 </Modal.Body>
                 <Modal.Footer>
-                    <div className='d-flex flex-column'>
+                    <div className='d-flex flex-column w-100'>
                         <div className='d-flex justify-content-between'>
-                            <Button variant='outline-danger me-2' onClick={(): void => setClearModalOpen(false)}>No</Button>
-                            <Button variant='outline-primary' onClick={clearLogs}>Yes</Button>
+                            <Button
+                                variant='outline-danger me-2'
+                                onClick={(): void => setClearModalOpen(false)}
+                            >
+                                No
+                            </Button>
+                            <Button variant='outline-primary' onClick={clearLogs}>
+                                Yes
+                            </Button>
                         </div>
-                        <div className='mt-2'>
-                            {error && <p className='m-0' style={{color: 'red'}}>Error: {error}</p>}
-                        </div>
+                        {clearLogsError && (
+                            <p className='m-0 mt-2 text-end' style={{ color: 'red' }}>
+                                {clearLogsError}
+                            </p>
+                        )}
                     </div>
                 </Modal.Footer>
             </Modal>
