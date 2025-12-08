@@ -9,5 +9,8 @@ export default defineConfig({
         allowedHosts: [
             'eager-remotely-mongrel.ngrok-free.app'
         ],
+        proxy: {
+            "/api": "http://localhost:9998"
+        }
     },
 });

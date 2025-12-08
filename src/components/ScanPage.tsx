@@ -3,7 +3,6 @@ import {Button, Col, Container, Modal, Row} from 'react-bootstrap';
 import {Buffer} from 'buffer';
 import Scanner from './Scanner';
 import axios, {isAxiosError} from 'axios';
-import urlConfig from '../urlConfig.json'
 
 const ScanPage: React.FC = () => {
     const b64Regex = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
@@ -50,7 +49,7 @@ const ScanPage: React.FC = () => {
         const now = new Date();
         try {
             await axios.post(
-                `${urlConfig.baseUrl}/api/write`,
+                `/api/write`,
                 {
                     rental: rentalId,
                     student: Buffer.from(studentName).toString('base64'),

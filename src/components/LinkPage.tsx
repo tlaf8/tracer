@@ -2,7 +2,6 @@ import React, {useEffect, useState} from 'react';
 import {Container, Row} from 'react-bootstrap';
 import {useNavigate} from 'react-router-dom';
 import axios, {isAxiosError} from 'axios';
-import urlConfig from '../urlConfig.json';
 
 const LinkPage: React.FC = () => {
     const [key, setKey] = useState<string>('');
@@ -12,7 +11,7 @@ const LinkPage: React.FC = () => {
 
     const handleConnect = async (): Promise<void> => {
         try {
-            const response = await axios.post(`${urlConfig.baseUrl}/api/link`, { key });
+            const response = await axios.post(`/api/link`, { key });
             localStorage.setItem('token', response.data.token);
 
             setKey(key);

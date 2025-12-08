@@ -4,7 +4,6 @@ import { Button, Col, Container, Modal, Row, Table } from 'react-bootstrap';
 import Rental from './Rental';
 import { Link } from 'react-router-dom';
 import Icon from './Icon';
-import urlConfig from '../urlConfig.json';
 
 interface Status {
     id: number;
@@ -99,7 +98,7 @@ const Dashboard: React.FC = () => {
 
         try {
             await axios.post(
-                `${urlConfig.baseUrl}/api/rentals/add`,
+                `/api/rentals/add`,
                 { rentals: rentalList },
                 {
                     headers: {
@@ -131,7 +130,7 @@ const Dashboard: React.FC = () => {
 
         try {
             await axios.post(
-                `${urlConfig.baseUrl}/api/rentals/remove`,
+                `/api/rentals/remove`,
                 { rental },
                 {
                     headers: {
@@ -190,7 +189,7 @@ const Dashboard: React.FC = () => {
         if (!token) return setGlobalError('No authentication token found. Please link this device.');
 
         try {
-            const response = await axios.get(`${urlConfig.baseUrl}/api/export`, {
+            const response = await axios.get(`/api/export`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -232,7 +231,7 @@ const Dashboard: React.FC = () => {
         if (!token) return setClearLogsError('No authentication token found. Please link this device.');
 
         try {
-            await axios.get(`${urlConfig.baseUrl}/api/clear`, {
+            await axios.get(`/api/clear`, {
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`,
@@ -274,7 +273,7 @@ const Dashboard: React.FC = () => {
         }
 
         try {
-            const logsResponse = await axios.get(`${urlConfig.baseUrl}/api/logs`, {
+            const logsResponse = await axios.get(`/api/logs`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -283,7 +282,7 @@ const Dashboard: React.FC = () => {
             setLogs(logsResponse.data.logs);
             setFetchingLogs(false);
 
-            const statusResponse = await axios.get(`${urlConfig.baseUrl}/api/status`, {
+            const statusResponse = await axios.get(`/api/status`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
