@@ -1,4 +1,4 @@
-import React, {useState} from 'react'
+import React, {useEffect, useState} from 'react'
 import {Link, Route, Routes, useLocation, useNavigate} from 'react-router-dom'
 
 const ScanPage = React.lazy(() => import('./components/ScanPage'));
@@ -10,8 +10,13 @@ const MakeQRCode = React.lazy(() => import('./components/MakeQRCode'));
 const App: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const [token] = useState<string | null>((): string | null => localStorage.getItem('token'));
+    const [token, setToken] = useState<string | null>(null);
 
+    useEffect((): void => {
+        const t = localStorage.getItem('token');
+        if (t) setToken(t);
+    }, [location.pathname])
+    
     return (
         <div
             style={{
