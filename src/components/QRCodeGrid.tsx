@@ -28,7 +28,6 @@ const downloadQRCodesZip = async (qrData: QRItem[], qrImages: string[]): Promise
     saveAs(await zip.generateAsync({type: 'blob'}), `tracer-qrcodes.zip`);
 };
 
-
 const QRCodeGrid: React.FC<QRCodeGridProps> = ({qrData}: QRCodeGridProps) => {
     const [qrImages, setQrImages] = useState<string[]>([]);
 

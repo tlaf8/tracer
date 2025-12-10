@@ -79,7 +79,7 @@ const MakeQRCode: React.FC = () => {
         setRawString('');
     };
 
-    const handlePasteImport = () => {
+    const handlePasteImport = (): void => {
         setPasteError("");
 
         if (!pasteText.trim()) {

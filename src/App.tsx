@@ -6,7 +6,6 @@ const LinkPage = React.lazy(() => import('./components/LinkPage'));
 const Dashboard = React.lazy(() => import('./components/Dashboard'));
 const MakeQRCode = React.lazy(() => import('./components/MakeQRCode'));
 
-
 const App: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();

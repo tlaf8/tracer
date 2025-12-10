@@ -3,7 +3,7 @@ import axios, { isAxiosError } from 'axios';
 import { Button, Col, Container, Modal, Row, Table } from 'react-bootstrap';
 import Rental from './Rental';
 import { Link } from 'react-router-dom';
-import Icon from './Icon';
+import './styles/Dashboard.css';
 
 interface Status {
     id: number;
@@ -65,12 +65,13 @@ const naturalCompare = (a: string, b: string): number => {
 const Dashboard: React.FC = () => {
     const [logs, setLogs] = useState<Array<Record<string, string>>>([]);
     const [status, setStatus] = useState<Array<Record<string, string>>>([]);
-    const [hoveringStudent, setHoveringStudent] = useState<boolean>(false);
+
+    const [fetchingRentals, setFetchingRentals] = useState<boolean>(false);
+    const [fetchingLogs, setFetchingLogs] = useState<boolean>(false);
+
     const [rentalModalOpen, setRentalModalOpen] = useState<boolean>(false);
     const [helpModalOpen, setHelpModalOpen] = useState<boolean>(false);
     const [clearModalOpen, setClearModalOpen] = useState<boolean>(false);
-    const [fetchingRentals, setFetchingRentals] = useState<boolean>(false);
-    const [fetchingLogs, setFetchingLogs] = useState<boolean>(false);
 
     const [globalError, setGlobalError] = useState<string>('');
     const [rentalModalError, setRentalModalError] = useState<string>('');
@@ -87,6 +88,37 @@ const Dashboard: React.FC = () => {
         setFetchingRentals(false);
         setFetchingLogs(false);
         setRentalModalOpen(false);
+    };
+
+    const generateRentals = (): void => {
+        if (autoGenStart < 0 || autoGenEnd < 0) return setRentalModalError('Numbers cannot be negative.');
+        if (autoGenEnd === 0) return setRentalModalError('End cannot be 0.');
+        if (autoGenStart > autoGenEnd) return setRentalModalError('Start cannot be greater than end.');
+        if (rawString.trim() === '') return setRentalModalError('No base provided.');
+        if (autoGenStart > autoGenEnd) return setRentalModalError('Start cannot be greater than end.');
+
+        setRentalModalError('');
+        setRentalList(prev => {
+            const newItems = Array.from(
+                { length: autoGenEnd - autoGenStart + 1 },
+                (_, i) => `${rawString}-${autoGenStart + i}`
+            );
+
+            const prevSet = new Set(prev);
+            const globalSet = new Set(status.map(s => s.rental));
+
+            const uniqueNewItems = newItems.filter(item =>
+                !prevSet.has(item) && !globalSet.has(item)
+            );
+
+            return [...prev, ...uniqueNewItems];
+        });
+    };
+
+    const onDelete = (index: number): void => {
+        const newList = [...rentalList];
+        newList.splice(index, 1);
+        setRentalList(newList);
     };
 
     const addRental = async (): Promise<void> => {
@@ -153,31 +185,6 @@ const Dashboard: React.FC = () => {
                 console.error(err);
             }
         }
-    };
-
-    const generateRentals = (): void => {
-        if (autoGenStart < 0 || autoGenEnd < 0) return setRentalModalError('Numbers cannot be negative.');
-        if (autoGenEnd === 0) return setRentalModalError('End cannot be 0.');
-        if (autoGenStart > autoGenEnd) return setRentalModalError('Start cannot be greater than end.');
-        if (rawString.trim() === '') return setRentalModalError('No base provided.');
-        if (autoGenStart > autoGenEnd) return setRentalModalError('Start cannot be greater than end.');
-
-        setRentalModalError('');
-        setRentalList(prev => {
-            const newItems = Array.from(
-                { length: autoGenEnd - autoGenStart + 1 },
-                (_, i) => `${rawString}-${autoGenStart + i}`
-            );
-
-            const prevSet = new Set(prev);
-            const globalSet = new Set(status.map(s => s.rental));
-
-            const uniqueNewItems = newItems.filter(item =>
-                !prevSet.has(item) && !globalSet.has(item)
-            );
-
-            return [...prev, ...uniqueNewItems];
-        });
     };
 
     const exportCsv = async (): Promise<void> => {
@@ -253,12 +260,6 @@ const Dashboard: React.FC = () => {
         }
     };
 
-    const onDelete = (index: number): void => {
-        const newList = [...rentalList];
-        newList.splice(index, 1);
-        setRentalList(newList);
-    };
-
     const fetchDataCallback = useCallback(async (): Promise<void> => {
         setFetchingRentals(true);
         setFetchingLogs(true);
@@ -327,48 +328,35 @@ const Dashboard: React.FC = () => {
                     <Col>
                         <h4 className='text-white'>
                             Logs
-                            <Icon className='bi-arrow-clockwise float-end' onClick={fetchDataCallback} />
-                            <Icon
-                                className='bi bi-file-earmark-arrow-down me-2 float-end'
-                                onClick={(): Promise<void> => exportCsv()}
-                            />
+                            <span className='bi-arrow-clockwise float-end icon-clickable' onClick={fetchDataCallback} />
+                            <span className='bi bi-file-earmark-arrow-down me-2 float-end icon-clickable' onClick={(): Promise<void> => exportCsv()} />
                             {fetchingLogs && (
-                                <div
-                                    className='spinner-border spinner-border-sm float-end me-2 mt-1'
-                                    role='status'
-                                ></div>
+                                <div className='spinner-border spinner-border-sm float-end me-2 mt-1' role='status'></div>
                             )}
                         </h4>
-                        <div
-                            className='overflow-y-auto'
-                            style={{
-                                maxHeight: '30vh',
-                                scrollbarWidth: 'none',
-                                border: '1px solid #4D5154',
-                            }}
-                        >
+                        <div className='overflow-y-auto mhv-30 border-custom-dark scrollbar-none'>
                             <Table striped bordered hover responsive variant='dark'>
                                 <thead className='bg-dark'>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Rental</th>
-                                    <th>Action</th>
-                                    <th>Student</th>
-                                    <th>Date</th>
-                                    <th>Time</th>
-                                </tr>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Rental</th>
+                                        <th>Action</th>
+                                        <th>Student</th>
+                                        <th>Date</th>
+                                        <th>Time</th>
+                                    </tr>
                                 </thead>
                                 <tbody>
-                                {logs.map(log => (
-                                    <tr key={log.id}>
-                                        <td>{log.id}</td>
-                                        <td>{log.rental}</td>
-                                        <td>{log.action}</td>
-                                        <td>{log.student}</td>
-                                        <td>{log.date}</td>
-                                        <td>{log.time}</td>
-                                    </tr>
-                                ))}
+                                    {logs.map(log => (
+                                        <tr key={log.id}>
+                                            <td>{log.id}</td>
+                                            <td>{log.rental}</td>
+                                            <td>{log.action}</td>
+                                            <td>{log.student}</td>
+                                            <td>{log.date}</td>
+                                            <td>{log.time}</td>
+                                        </tr>
+                                    ))}
                                 </tbody>
                             </Table>
                         </div>
@@ -379,7 +367,7 @@ const Dashboard: React.FC = () => {
                     <Col>
                         <h4 className='text-white'>
                             Rentals
-                            <Icon className='bi-plus float-end' onClick={(): void => setRentalModalOpen(true)} />
+                            <span className='bi-plus float-end icon-clickable' tabIndex={0} role='button' onClick={(): void => setRentalModalOpen(true)}></span>
                             {fetchingRentals && (
                                 <div
                                     className='spinner-border spinner-border-sm float-end me-2 mt-1'
@@ -387,14 +375,7 @@ const Dashboard: React.FC = () => {
                                 ></div>
                             )}
                         </h4>
-                        <div
-                            className='overflow-y-auto'
-                            style={{
-                                maxHeight: '30vh',
-                                scrollbarWidth: 'none',
-                                border: '1px solid #4D5154',
-                            }}
-                        >
+                        <div className='overflow-y-auto mhv-30 border-custom-dark scrollbar-none'>
                             <Table striped bordered hover responsive variant='dark'>
                                 <thead className='bg-dark'>
                                 <tr>
@@ -416,21 +397,8 @@ const Dashboard: React.FC = () => {
                                 </tbody>
                             </Table>
                         </div>
-                        <div
-                            className='float-end mt-2'
-                            onMouseEnter={(): void => setHoveringStudent(true)}
-                            onMouseLeave={(): void => setHoveringStudent(false)}
-                        >
-                            <Link
-                                to='/make'
-                                style={{
-                                    textDecoration: 'none',
-                                    color: hoveringStudent ? 'white' : '#4D5154',
-                                    fontSize: '0.9rem',
-                                }}
-                            >
-                                Create QR Codes
-                            </Link>
+                        <div className='float-end mt-2'>
+                            <Link to='/make' className='hovering-link'>Create QR Codes</Link>
                         </div>
                     </Col>
                 </Row>
@@ -439,17 +407,9 @@ const Dashboard: React.FC = () => {
             {/* New rental modal */}
             <Modal show={rentalModalOpen} data-bs-theme='dark' className='text-light'>
                 <Modal.Header>
-                    <Modal.Title
-                        style={{
-                            width: '100%',
-                            display: 'flex',
-                            flexDirection: 'row',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                        }}
-                    >
+                    <Modal.Title className='w-100 d-flex flex-row justify-content-between align-items-center'>
                         New rental
-                        <Icon className='ms-3 bi bi-info-circle' onClick={(): void => setHelpModalOpen(true)} />
+                        <span className='ms-3 bi bi-info-circle icon-clickable' onClick={(): void => setHelpModalOpen(true)}></span>
                     </Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
@@ -487,9 +447,8 @@ const Dashboard: React.FC = () => {
                                 <div className='d-flex flex-row justify-content-between align-items-center'>
                                     <input
                                         type='number'
-                                        className='form-control bg-dark text-light border-secondary'
+                                        className='form-control bg-dark text-light border-secondary mwr-11'
                                         placeholder='Start'
-                                        style={{ maxWidth: '175px' }}
                                         onChange={e => {
                                             const val = e.target.value;
                                             setAutoGenStart(val === '' ? 0 : Number(val));
@@ -497,51 +456,29 @@ const Dashboard: React.FC = () => {
                                     />
                                     <input
                                         type='number'
-                                        className='form-control bg-dark text-light border-secondary'
+                                        className='form-control bg-dark text-light border-secondary mwr-11'
                                         placeholder='End'
-                                        style={{ maxWidth: '175px' }}
                                         onChange={e => {
                                             const val = e.target.value;
                                             setAutoGenEnd(val === '' ? 0 : Number(val));
                                         }}
                                     />
-                                    <button className='btn btn-outline-primary ms-2' onClick={generateRentals}>
-                                        Generate
-                                    </button>
+                                    <button className='btn btn-outline-primary ms-2' onClick={generateRentals}>Generate</button>
                                 </div>
                             )}
 
                             {rentalList.length > 0 &&
-                                <button className='btn btn-outline-danger mt-2' onClick={() => { setRentalList([]) }} style={{
-                                    lineHeight: '10px',
-                                    width: '100%'
-                                }}>Clear</button>
+                                <button className='btn btn-outline-danger mt-2 lh-1 w-100' onClick={() => setRentalList([])}>Clear</button>
                             }
 
-                            <div className='mt-3 overflow-y-auto scrollable-container' style={{ maxHeight: '50vh' }}>
+                            <div className='mt-3 overflow-y-auto scrollbar-none mhv-50'>
                                 {rentalList.map((item, i) => (
                                     <div
-                                        className='p-2 mt-1 d-flex flex-row justify-content-between'
+                                        className='p-2 mt-1 d-flex flex-row justify-content-between border-custom-dark border-radius-375'
                                         key={i}
-                                        style={{
-                                            border: '1px solid #4D5154',
-                                            borderRadius: 'var(--bs-border-radius)',
-                                        }}
                                     >
-                                        <div
-                                            style={{
-                                                maxWidth: '90%',
-                                                textOverflow: 'ellipsis',
-                                                overflow: 'hidden',
-                                            }}
-                                        >
-                                            {item}
-                                        </div>
-                                        <Icon
-                                            className='bi bi-x float-end'
-                                            onClick={() => onDelete(i)}
-                                            hoverColor='orangered'
-                                        />
+                                        <div className='mwp-90 text-truncate'>{item}</div>
+                                        <span className='bi bi-x float-end icon-clickable hover-orangered' onClick={() => onDelete(i)}></span>
                                     </div>
                                 ))}
                             </div>
@@ -566,7 +503,7 @@ const Dashboard: React.FC = () => {
                             </button>
                         </div>
                         {rentalModalError && (
-                            <p className='m-0 mt-2 text-end' style={{ color: 'red' }}>
+                            <p className='m-0 mt-2 text-end color-red'>
                                 {rentalModalError}
                             </p>
                         )}
@@ -586,11 +523,11 @@ const Dashboard: React.FC = () => {
                     <Modal.Title>Help</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    <div className='mb-3' style={{ color: '#c4c4c4' }}>
+                    <div className='mb-3 color-off-white'>
                         <strong className='text-white'>Single Rental</strong>
                         <p>Enter the name of the rental and press 'Enter'</p>
                     </div>
-                    <div style={{ color: '#c4c4c4' }}>
+                    <div className='color-off-white'>
                         <strong className='text-white'>Multiple Rentals</strong>
                         <p>Select 'Auto generate rentals' and enter the start and end numbers of rentals to be generated.</p>
                     </div>
@@ -612,7 +549,7 @@ const Dashboard: React.FC = () => {
                     <Modal.Title>Clear Logs</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    <div className='mb-3' style={{ color: '#c4c4c4' }}>
+                    <div className='mb-3 color-off-white'>
                         A copy of logs have been downloaded to your device in a format compatible with Excel, do you
                         want to clear logs?
                     </div>
@@ -620,18 +557,11 @@ const Dashboard: React.FC = () => {
                 <Modal.Footer>
                     <div className='d-flex flex-column w-100'>
                         <div className='d-flex justify-content-between'>
-                            <Button
-                                variant='outline-danger me-2'
-                                onClick={(): void => setClearModalOpen(false)}
-                            >
-                                No
-                            </Button>
-                            <Button variant='outline-primary' onClick={clearLogs}>
-                                Yes
-                            </Button>
+                            <Button variant='outline-danger me-2' onClick={(): void => setClearModalOpen(false)}>No</Button>
+                            <Button variant='outline-primary' onClick={clearLogs}>Yes</Button>
                         </div>
                         {clearLogsError && (
-                            <p className='m-0 mt-2 text-end' style={{ color: 'red' }}>
+                            <p className='m-0 mt-2 text-end color-red'>
                                 {clearLogsError}
                             </p>
                         )}
