@@ -5,8 +5,8 @@ import Scanner from './Scanner';
 import axios, {isAxiosError} from 'axios';
 
 const ScanPage: React.FC = () => {
-    const b64Regex = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
-    const rentalRegex = /\b\w{1,6}\d{0,4}-\d+\b/;
+    const b64Regex = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{4})?$/;
+    const rentalRegex = /^[A-Z0-9]+-\d+$/;
     const [rentalId, setRentalId] = useState<string | null>(null);
     const [studentName, setStudentName] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -16,9 +16,10 @@ const ScanPage: React.FC = () => {
 
     const handleScan = (data: string): void => {
         if (b64Regex.test(data)) {
-            setStudentName(Buffer.from(data, 'base64').toString());
+            const decoded = Buffer.from(data, 'base64').toString();
+            setStudentName(prev => prev === decoded ? prev : decoded);
         } else if (rentalRegex.test(data)) {
-            setRentalId(data);
+            setRentalId(prev => prev === data ? prev : data);
         }
     };
 
