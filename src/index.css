@@ -3,5 +3,41 @@ body {
 }
 
 .scrollbar-none {
-  scrollbar-width: none;
+    scrollbar-width: none;
+}
+
+.border-custom-dark {
+    border: 1px solid #4d5154;
+}
+
+.hover-orangered:hover {
+    color: orangered;
+}
+
+.color-red {
+    color: red;
+}
+
+.color-off-white {
+    color: #c4c4c4;
+}
+
+.hovering-link {
+    text-decoration: none;
+    color: #4d5154;
+    transition: color 0.2s ease-in-out;
+}
+
+.hovering-link:hover {
+    color: white;
+}
+
+.icon-clickable {
+    cursor: pointer;
+    color: #4d5154;
+    transition: color 0.2s ease-in-out;
+}
+
+.icon-clickable:hover {
+    color: white;
 }
