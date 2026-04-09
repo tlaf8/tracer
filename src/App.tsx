@@ -1,7 +1,7 @@
 import { lazy, Suspense, useState, useEffect } from 'react';
 import { Routes, Route, Link } from 'react-router-dom';
-import { type Debug, type Page } from './types'
-import { Buffer } from 'buffer';
+import { type Debug, type Page } from './types';
+import DebugLoading from './components/DebugLoading';
 
 const Scan = lazy(() => import('./components/Scanner'));
 const Dashboard = lazy(() => import('./components/Dashboard'));
@@ -20,21 +20,21 @@ const App = () => {
 
     return (
         <div className='h-screen flex flex-col text-neutral-300'>
-            <nav className='bg-neutral-900 flex justify-between items-center p-3 list-none z-10'>
-                <li className='text-2xl'>tracer</li>
+            <nav className='flex justify-between items-center bg-neutral-900 p-2 list-none z-10'>
+                <li className='p-2 text-2xl'>tracer</li>
 
                 <li>
-                    <Link to={pages[pageIdx].link} onClick={nextPage} className='p-3 flex justify-end cursor-pointer'>
+                    <Link to={pages[pageIdx].link} onClick={nextPage} className='flex justify-end p-2 text-lg cursor-pointer'>
                         {pages[pageIdx].disp}
                     </Link>
                 </li>
             </nav>
 
-            <div className='flex-1 flex flex-col min-h-0 bg-neutral-800'>
+            <div className='min-h-0 flex-1 flex flex-col bg-neutral-800'>
                 <Suspense
                     fallback={
-                        <div className="flex-1 flex min-h-0 overflow-hidden">
-                            Loading...
+                        <div className='min-h-0 flex-1 flex overflow-hidden opacity-10'>
+                            <DebugLoading />
                         </div>
                     }
                 >
@@ -44,6 +44,10 @@ const App = () => {
                     </Routes>
                 </Suspense>
             </div>
+
+            <footer className='bg-neutral-800 text-center'>
+                <p className='opacity-10 text-sm p-1'>github/tlaf8</p>
+            </footer>
         </div>
     );
 };

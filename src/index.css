@@ -1,1 +1,13 @@
 @import 'tailwindcss';
+
+@layer base {
+    :root {
+        font-family: 'Ubuntu Mono', sans-serif;
+    }
+}
+
+@layer utilities {
+    .hide-scrollbar::-webkit-scrollbar {
+        width: 0px;
+    }
+}
