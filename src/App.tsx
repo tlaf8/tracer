@@ -33,7 +33,7 @@ const App = () => {
             <div className='min-h-0 flex-1 flex flex-col bg-neutral-800'>
                 <Suspense
                     fallback={
-                        <div className='min-h-0 flex-1 flex overflow-hidden opacity-10'>
+                        <div className='flex-1 flex items-center justify-center overflow-hidden opacity-5'>
                             <DebugLoading />
                         </div>
                     }

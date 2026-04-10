@@ -25,3 +25,4 @@ dist-ssr
 
 #other
 src/components/DebugLoading.tsx
+public/debug/*
